@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dparadig.auth_server.mapper.UserMapper">
+
+    <select id="getAllUser" resultType="CustomerUser">
+        SELECT * FROM customeruser
+    </select>
+
+    <select id="getUserByEmail" resultType="CustomerUser">
+        SELECT * FROM customeruser where email = #{email}
+    </select>
+
+
+    <select id="getUserRoles" resultType="Role">
+        SELECT *
+        FROM customeruserrole as cur
+        LEFT JOIN
+        role on cur.roleID = role.roleID
+        WHERE cur.customerUserID = #{customerUserID}
+    </select>
+
+    <select id="getRolePrivileges" resultType="Privilege">
+        SELECT p.`privilegeID`,
+            p.`name`,
+            p.`description`,
+            p.`type`,
+            p.`category`,
+            p.`status`
+        FROM `roleprivilege` as  rp
+        left join privilege as p on  p.privilegeID = rp.privilegeID
+        where rp.roleID = #{roleID};
+
+    </select>
+
+
+
+</mapper>
