@@ -7,13 +7,12 @@
 <mapper namespace="com.dparadig.auth_server.mapper.UserMapper">
 
     <select id="getAllUser" resultType="CustomerUser">
-        SELECT * FROM customeruser
+        SELECT * FROM customer_user
     </select>
 
     <select id="getUserByEmail" resultType="CustomerUser">
-        SELECT * FROM customeruser where email = #{email}
+        SELECT * FROM customeruser WHERE email = #{email}
     </select>
-
 
     <select id="getUserRoles" resultType="Role">
         SELECT *
@@ -31,11 +30,8 @@
             p.`category`,
             p.`status`
         FROM `roleprivilege` as  rp
-        left join privilege as p on  p.privilegeID = rp.privilegeID
-        where rp.roleID = #{roleID};
-
+        LEFT JOIN privilege as p on  p.privilegeID = rp.privilegeID
+        WHERE rp.roleID = #{roleID};
     </select>
-
-
 
 </mapper>

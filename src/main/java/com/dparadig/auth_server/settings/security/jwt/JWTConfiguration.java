@@ -1,6 +1,8 @@
-package com.dparadig.auth_server.settings.security.oauth2;
+package com.dparadig.auth_server.settings.security.jwt;
 
+import com.dparadig.auth_server.settings.security.oauth2.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
@@ -13,6 +15,12 @@ import java.util.List;
 
 @Configuration
 public class JWTConfiguration {
+
+    @Value("${config.jwt.signingKey}")
+    private String signingKey;
+
+    @Value("${config.jwt.verifierKey}")
+    private String verifierKey;
 
     @Autowired
     private ClientDetailsService clientDetailsService;
@@ -40,21 +48,17 @@ public class JWTConfiguration {
     public JwtAccessTokenConverter tokenEnhancer() {
         JwtAccessTokenConverter jwtAccessTokenConverter = new JwtAccessTokenConverter();
         jwtAccessTokenConverter.setAccessTokenConverter(defaultAccessTokenConverter());
-
-        jwtAccessTokenConverter.setSigningKey("123");
-
+        jwtAccessTokenConverter.setSigningKey(signingKey);
+        //jwtAccessTokenConverter.setVerifierKey(verifierKey);
         return jwtAccessTokenConverter;
     }
 
     @Bean
     public DefaultAccessTokenConverter defaultAccessTokenConverter() {
         DefaultAccessTokenConverter converter = new DefaultAccessTokenConverter();
-
         DefaultUserAuthenticationConverter userConverter = new DefaultUserAuthenticationConverter();
         userConverter.setUserDetailsService(userDetailsService);
-
         converter.setUserTokenConverter(userConverter);
-
         return converter;
     }
 

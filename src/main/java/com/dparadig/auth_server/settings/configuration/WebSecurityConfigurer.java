@@ -1,5 +1,6 @@
-package com.dparadig.auth_server.settings.security.oauth2;
+package com.dparadig.auth_server.settings.configuration;
 
+import com.dparadig.auth_server.settings.security.oauth2.CustomUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -14,9 +15,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 
+
 @Configuration
 @EnableWebSecurity
-@ComponentScan(basePackageClasses = CustomUserDetails.class)
+@ComponentScan(basePackageClasses = CustomUser.class)
 public class WebSecurityConfigurer extends WebSecurityConfigurerAdapter {
     @Autowired
     private UserDetailsService userDetailsService;
@@ -43,4 +45,5 @@ public class WebSecurityConfigurer extends WebSecurityConfigurerAdapter {
         http.authorizeRequests()
                 .anyRequest().authenticated();
     }
+
 }

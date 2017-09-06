@@ -1,5 +1,7 @@
-package com.dparadig.auth_server.settings.security.oauth2;
+package com.dparadig.auth_server.settings.configuration;
 
+import com.dparadig.auth_server.settings.security.oauth2.CustomUserDetailsService;
+import com.dparadig.auth_server.settings.security.jwt.JWTConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
@@ -32,13 +34,13 @@ public class AuthorizationServerConfiguration extends AuthorizationServerConfigu
     }
 
     @Override
-    public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
+        public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
         clients.inMemory()
-                .withClient("my-trusted-client").secret("secret")
+                .withClient("dparadig").secret("ddp4r4d1g")
                 .authorizedGrantTypes("password", "authorization_code", "refresh_token", "implicit")
                 .scopes("read", "write")
-                .accessTokenValiditySeconds(600)
-                .refreshTokenValiditySeconds(600);
+                .accessTokenValiditySeconds(6000)
+                .refreshTokenValiditySeconds(60000);
     }
 
     @Override
