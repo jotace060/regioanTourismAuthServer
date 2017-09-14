@@ -11,6 +11,7 @@ public class Constants {
     public static final int PARAMETER_MISSING_ERROR = 1001;
     public static final int PARAMETER_ILLEGAL_ERROR = 1002;
     public static final int RESOURCE_NOT_FOUND_ERROR = 1003;
+
     /**
      * Prevent instantiation
      */

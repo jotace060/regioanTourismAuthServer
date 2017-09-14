@@ -17,7 +17,7 @@ apply plugin: 'eclipse'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
 
-version = '0.1.0'
+version = '0.1.1'
 sourceCompatibility = 1.8
 
 repositories {
@@ -39,5 +39,5 @@ dependencies {
     compile 'com.google.code.gson:gson:2.8.1'
 	compileOnly('org.projectlombok:lombok')
 	testCompile "org.springframework.security:spring-security-test"
-
+	compile("org.mybatis:mybatis-typehandlers-jsr310:1.0.2")
 }

@@ -34,9 +34,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         CustomerUser customerUser = userService.getUserByEmail(email);
         if (null == customerUser)
             throw new UsernameNotFoundException("Bad credentials");
-
-        List<Role> userRoles = userService.getUserRoles(customerUser.getCustomerUserID());
-        List<Privilege> userPrivileges = userService.getRolePrivileges(customerUser.getCustomerUserID());
+        log.info("Founded "+customerUser.getCustomerUserId());
+        List<Role> userRoles = userService.getUserRoles(customerUser.getCustomerUserId());
+        List<Privilege> userPrivileges = userService.getRolePrivileges(customerUser.getCustomerUserId());
+        log.info("userRoles "+userRoles.size());
+        log.info("userPrivileges "+userPrivileges.size());
 
         //Only name
         Set<String> rolesList = userRoles
@@ -52,7 +54,6 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .collect(Collectors.toSet());
 
         //Only name
-
         Set<String> privilegesList = userPrivileges
                 .stream()
                 .map(p -> {

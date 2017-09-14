@@ -16,11 +16,11 @@ import java.util.Date;
 public class Role implements Serializable {
 
     private static final long serialVersionUID = 1512254861L;
-    private int roleID;
-    private int licenceTypeID;
+    private int role_id;
+    private int licence_type_id;
     private String name;
-    private Date createDate;
-    private Date modificationDate;
+    private Date create_date;
+    private Date modification_date;
     private int status;
 
 }

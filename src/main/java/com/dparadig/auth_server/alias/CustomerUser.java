@@ -15,8 +15,8 @@ import java.util.Date;
 public class CustomerUser implements Serializable {
 
     private static final long serialVersionUID = 15154861L;
-    private int customerUserID;
-    private int customerCompanyID;
+    private int customerUserId;
+    private int customerCompanyId;
     private String email;
     private String name;
     private String idDocument;

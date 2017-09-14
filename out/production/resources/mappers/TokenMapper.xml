@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dparadig.auth_server.mapper.UserMapper">
+
+    <select id="getUserTokens" resultType="Token">
+        SELECT * FROM token WHERE customer_user_id = #{customerUserId}
+    </select>
+
+    <select id="getTokenByToken" parameterType="Token" resultType="Token">
+        SELECT * FROM token WHERE token = #{token}
+    </select>
+
+
+    <insert id="insertToken" parameterType="Token">
+        INSERT INTO token
+        (`customer_user_id`,
+        `token`,
+        `expr_date`,
+        `token_type`)
+        VALUES
+        (#{customerUserId},#{token},#{exprDate},#{tokenType})
+    </insert>
+
+    <delete id="deleteToken" parameterType="Token">
+        DELETE FROM token WHERE token = #{token}
+    </delete>
+
+
+</mapper>
