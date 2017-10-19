@@ -1,14 +1,9 @@
 package com.dparadig.auth_server.controller;
 
-import com.dparadig.auth_server.alias.CustomerCompany;
-import com.dparadig.auth_server.alias.CustomerUser;
-import com.dparadig.auth_server.alias.Token;
-import com.dparadig.auth_server.common.Constants;
-import com.dparadig.auth_server.common.TokenType;
-import com.dparadig.auth_server.service.EmailService;
-import com.google.gson.JsonObject;
-import lombok.extern.apachecommons.CommonsLog;
-import org.apache.commons.lang3.time.DateUtils;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
 import org.apache.ibatis.session.SqlSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,13 +12,19 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import com.dparadig.auth_server.alias.CustomerCompany;
+import com.dparadig.auth_server.alias.CustomerUser;
+import com.dparadig.auth_server.alias.Token;
+import com.dparadig.auth_server.common.Constants;
+import com.dparadig.auth_server.common.TokenType;
+import com.dparadig.auth_server.service.EmailService;
+import com.google.gson.JsonObject;
+import com.dparadig.auth_server.common.*;
+
+import lombok.extern.apachecommons.CommonsLog;
 
 /**
  * @author Jlabarca
@@ -31,7 +32,8 @@ import java.util.UUID;
 @Controller
 @CommonsLog
 @CrossOrigin(origins = Constants.ORIGIN)
-public class UserController {
+@RequestMapping(produces = "application/json")
+public class UserController{
 
     @Autowired
     private EmailService emailService;
@@ -195,7 +197,7 @@ public class UserController {
 
     @RequestMapping("/confirmEmail")
     @ResponseBody
-    public String confirmEmail(String t) {
+    public String confirmEmail(@RequestParam String t) {
         JsonObject response = new JsonObject();
         Token token = this.sqlSession.selectOne("getTokenByToken", t);
         if(token != null){
@@ -243,6 +245,50 @@ public class UserController {
     }
 
 
+    /*
+    OTRSAuth Request creado especificamente para ser consultado por
+    el backend multiclient de OTRS en los login con la cuenta de customerUser
+    dentro del OTRS Dashboard.
+     */
+
+    @RequestMapping("/otrsAuth")
+    @ResponseBody
+    public String otrsAuth(@RequestParam String username, @RequestParam String password) {
+
+        JsonObject response = new JsonObject();
+        CustomerUser customerUser = this.sqlSession.selectOne("getUserByEmail", username);
+        log.info(customerUser.toString());
+        log.info(password);
+        log.info(passwordEncoder.encode(password));
+        if(passwordEncoder.matches(password,customerUser.getPassCurr())){
+            response.addProperty("status","success");
+            response.addProperty("message","Access Granted");
+            response.addProperty("id",customerUser.getCustomerUserId());
+        }else{
+            response.addProperty("message","Unauthorized");
+            response.addProperty("status","error");
+        }
+
+        return response.toString();
+    }
+
+    @RequestMapping("/getAllCompanyUsersBylLicenseCompanyId")
+    @ResponseBody
+        public String getAllCompanyUsersBylLicenseCompanyId(@RequestParam int licenseCompanyId) {
+        log.info("TEST "+licenseCompanyId );
+        Response response = new Response();
+        try {
+            List users = this.sqlSession.selectList("getAllCompanyUsersBylLicenseCompanyId", licenseCompanyId);
+            response.setStatus(Status.SUCCESS);
+            response.setData(users);
+        }catch (Exception e){
+            response.setStatus(Status.ERROR);
+            response.setMessage(Messages.SELECT_FAIL);
+            log.error(e.getMessage());
+        }
+
+        return response.toJson();
+    }
 
 
 }

@@ -1,5 +1,6 @@
 package com.dparadig.auth_server.controller;
 
+import com.dparadig.auth_server.common.Constants;
 import com.dparadig.auth_server.settings.exceptions.DefaultExceptionAttributes;
 import com.dparadig.auth_server.settings.exceptions.ExceptionAttributes;
 import lombok.extern.apachecommons.CommonsLog;
@@ -8,7 +9,10 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -82,5 +86,12 @@ public class ExceptionController {
         mav.addObject("url", req.getRequestURL());
         mav.setViewName("error");
         return mav;
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public void handleMissingParams(MissingServletRequestParameterException ex) {
+        String name = ex.getParameterName();
+        log.info(name + " parameter is missing");
+        // Actual exception handling
     }
 }

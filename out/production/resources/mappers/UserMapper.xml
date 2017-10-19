@@ -14,6 +14,16 @@
         SELECT * FROM customer_user WHERE email = #{email} AND status = 1
     </select>
 
+    <select id="getAllCompanyUsersBylLicenseCompanyId" resultType="CustomerUser"  parameterType="int">
+        SELECT cu.customer_user_id, cu.name, cu.email FROM customer_user cu
+        LEFT JOIN license_company lc on cu.customer_company_id = lc.customer_company_id
+        WHERE lc.license_company_id = #{licenseCompanyId}
+    </select>
+
+    <select id="getUserById" resultType="CustomerUser">
+        SELECT * FROM customer_user WHERE customer_user_id = #{customerUserId} AND status = 1
+    </select>
+
     <select id="getUserRoles" resultType="Role">
         SELECT *
         FROM customer_user_role as cur
@@ -21,6 +31,7 @@
         role on cur.role_id = role.role_id
         WHERE cur.customer_user_id = #{customerUserId}
     </select>
+
 
     <select id="getUserValidationStatus" resultType="int">
         SELECT validation_status
