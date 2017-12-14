@@ -14,14 +14,14 @@
         SELECT * FROM customer_user WHERE email = #{email} AND status = 1
     </select>
 
+    <select id="getUserById" resultType="CustomerUser">
+        SELECT * FROM customer_user WHERE customer_user_id = #{customerUserId} AND status = 1
+    </select>
+
     <select id="getAllCompanyUsersBylLicenseCompanyId" resultType="CustomerUser"  parameterType="int">
         SELECT cu.customer_user_id, cu.name, cu.email FROM customer_user cu
         LEFT JOIN license_company lc on cu.customer_company_id = lc.customer_company_id
         WHERE lc.license_company_id = #{licenseCompanyId}
-    </select>
-
-    <select id="getUserById" resultType="CustomerUser">
-        SELECT * FROM customer_user WHERE customer_user_id = #{customerUserId} AND status = 1
     </select>
 
     <select id="getUserRoles" resultType="Role">
@@ -82,5 +82,24 @@
         where customer_user_id = #{customerUserId}
     </update>
 
+    <update id="updateUser"  parameterType="CustomerUser">
+        update customer_user set
+        email = #{email},
+        name = #{name},
+        id_document = #{idDocument},
+        country_id = #{countryId},
+        language_list_id = #{languageListId},
+        modification_date = now()
+        where customer_user_id = #{customerUserId}
+    </update>
 
+
+
+    <select id="getAllCountries" resultType="Map">
+        SELECT * FROM country;
+    </select>
+
+    <select id="getAllLanguages" resultType="Map">
+        SELECT * FROM language_list where valid = 1;
+    </select>
 </mapper>

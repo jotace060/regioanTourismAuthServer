@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * @author jlabarca
@@ -16,11 +16,11 @@ import java.util.Date;
 public class Role implements Serializable {
 
     private static final long serialVersionUID = 1512254861L;
-    private int role_id;
-    private int licence_type_id;
+    private int roleId;
+    private int licenceTypeId;
     private String name;
-    private Date create_date;
-    private Date modification_date;
+    private LocalDateTime createDate = LocalDateTime.now();
+    private LocalDateTime modificationDate = LocalDateTime.now();
     private int status;
 
 }

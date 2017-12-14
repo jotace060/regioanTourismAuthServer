@@ -19,6 +19,21 @@ public class Response {
     private String message;
     private Object data;
 
+    public void setStatus(String status) {
+        switch (status){
+            case Status.ERROR:
+                this.message = Messages.GENERAL_ERROR;
+                break;
+            case Status.SUCCESS:
+                this.message = Messages.GENERAL_SUCCESS;
+                break;
+            case Status.WARNING:
+                this.message = Messages.GENERAL_WARNING;
+                break;
+        }
+        this.status = status;
+    }
+
     public String toJson(){
         return Constants.GSON.toJson(this);
     }

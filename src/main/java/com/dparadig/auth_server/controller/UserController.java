@@ -2,6 +2,7 @@ package com.dparadig.auth_server.controller;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.ibatis.session.SqlSession;
@@ -37,9 +38,10 @@ public class UserController{
 
     @Autowired
     private EmailService emailService;
+    @Autowired
+    private final SqlSession sqlSession;
     @Value("${frontend.url}")
     private String frontendURL;
-    private final SqlSession sqlSession;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
 
@@ -275,7 +277,6 @@ public class UserController{
     @RequestMapping("/getAllCompanyUsersBylLicenseCompanyId")
     @ResponseBody
         public String getAllCompanyUsersBylLicenseCompanyId(@RequestParam int licenseCompanyId) {
-        log.info("TEST "+licenseCompanyId );
         Response response = new Response();
         try {
             List users = this.sqlSession.selectList("getAllCompanyUsersBylLicenseCompanyId", licenseCompanyId);
@@ -290,5 +291,34 @@ public class UserController{
         return response.toJson();
     }
 
+    //region Settings
+    @RequestMapping("/getUserById")
+    @ResponseBody
+    public String getUserById(@RequestParam int customerUserId) {
+        Response response = new Response();
+        try {
+            CustomerUser user = this.sqlSession.selectOne("getUserById", customerUserId);
+            response.setStatus(Status.SUCCESS);
+            response.setData(user);
+        }catch (Exception e){
+            response.setStatus(Status.ERROR);
+        }
+        return response.toJson();
+    }
 
+    @RequestMapping("/getAllCountries")
+    @ResponseBody
+    public String getAllCountries() {
+        return ControllerCommons.simpleSelectListResponse(sqlSession,"getAllCountries");
+    }
+
+    @RequestMapping("/getAllLanguages")
+    @ResponseBody
+    public String getAllLanguages() {
+        return ControllerCommons.simpleSelectListResponse(sqlSession,"getAllLanguages");
+    }
+
+
+
+    //endregion
 }

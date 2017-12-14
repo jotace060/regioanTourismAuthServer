@@ -29,5 +29,13 @@
         DELETE FROM token WHERE token = #{token}
     </delete>
 
+    <update id="updateDocumentation">
+        update  DPA_DOCUMENTATION set
+        name = #{name},
+        description = #{description},
+        url = #{url},
+        lastupdate = getdate()
+        where id = #{id}
+    </update>
 
 </mapper>

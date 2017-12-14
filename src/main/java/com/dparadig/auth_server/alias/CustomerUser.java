@@ -1,10 +1,11 @@
 package com.dparadig.auth_server.alias;
 
+import java.io.Serializable;
+import java.time.LocalDateTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.io.Serializable;
-import java.util.Date;
 
 /**
  * @author jlabarca
@@ -24,9 +25,12 @@ public class CustomerUser implements Serializable {
     private String passCurr;
     private String passPrev;
     private String passPrev2;
-    private Date passExprDate;
+    private LocalDateTime passExprDate;
     private int validationStatus;
-    private Date createDate;
-    private Date modificationDate;
+    private LocalDateTime createDate = LocalDateTime.now();
+    private LocalDateTime modificationDate = LocalDateTime.now();
     private int status;
+    private int languageListId;
+    private int usedTrial = 0;
+
 }

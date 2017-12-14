@@ -33,8 +33,9 @@ public class JWTTokenEnhancer implements TokenEnhancer {
 
         //additionalInfo.put("uuid", customUser.getId());
         additionalInfo.put("auths", auths);
-        ((DefaultOAuth2AccessToken) accessToken).setAdditionalInformation(additionalInfo);
         additionalInfo.put("fullname", customUser.getCustomerUser().getName());
+        additionalInfo.put("company_id", customUser.getCustomerUser().getCustomerCompanyId());
+        additionalInfo.put("user_id", customUser.getCustomerUser().getCustomerUserId());
         ((DefaultOAuth2AccessToken) accessToken).setAdditionalInformation(additionalInfo);
         return accessToken;
     }
