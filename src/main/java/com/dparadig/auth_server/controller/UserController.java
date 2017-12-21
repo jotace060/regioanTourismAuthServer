@@ -74,18 +74,18 @@ public class UserController{
             this.sqlSession.insert("insertUser",customerUser);
             response.add("data",Constants.GSON.toJsonTree(customerUser));
             response.addProperty("status", "success");
-            response.addProperty("message", "Registrado Exitosamente");
+            response.addProperty("message", "Successfully Registered");
+            log.info("Inserted User with ID: "+customerUser.getCustomerUserId());
+            createConfirmationTokenAndSendEmail(customerUser);
         } catch (final DuplicateKeyException e) {
             response.addProperty("status", "error");
-            response.addProperty("message", "Correo ya registrado");
+            response.addProperty("message", "This email is already registered.");
+            e.printStackTrace();
         } catch (final Exception e) {
             response.addProperty("status", "error");
-            response.addProperty("message", "Error Interno");
+            response.addProperty("message", "Error 500");
+            e.printStackTrace();
         }
-
-        log.info("Inserted User with ID: "+customerUser.getCustomerUserId());
-        createConfirmationTokenAndSendEmail(customerUser);
-
 
         return response.toString();
     }
@@ -133,9 +133,9 @@ public class UserController{
                 if(token.getTokenType() == TokenType.PASS_RESET){
                     CustomerUser customerUser = this.sqlSession.selectOne("getUserById",token.getCustomerUserId());
                     //Check new pass is not repeat
-                    if(!passwordEncoder.matches(password,customerUser.getPassCurr())&&
-                        !passwordEncoder.matches(password,customerUser.getPassPrev())&&
-                        !passwordEncoder.matches(password,customerUser.getPassPrev2())){
+                    if( passwordEncoder.matches(password,customerUser.getPassCurr())||
+                        passwordEncoder.matches(password,customerUser.getPassPrev())||
+                        passwordEncoder.matches(password,customerUser.getPassPrev2())){
                         response.addProperty("message","You can't use old passwords");
                         log.info("Old password for : "+token.getTokenType());
                         response.addProperty("status","error");
@@ -148,7 +148,7 @@ public class UserController{
                         this.sqlSession.delete("deleteToken",token);
                     }
                 }else{
-                    response.addProperty("message","Invalid Key");
+                    response.addProperty("message","Expired activation key");
                     log.info("Invalid Reset password Token Type: "+token.getTokenType());
                     response.addProperty("status","error");
                 }
@@ -178,7 +178,7 @@ public class UserController{
             new Thread(() -> {
                 sendPassResetEmail(customerUser,token);
             }).start();
-            response.addProperty("message","We sent a reset pass url to "+email+". You may need to check your Junk or Spam folder.");
+            response.addProperty("message","Password reset link has been sent to "+email);
             response.addProperty("status","success");
         }else{
             response.addProperty("message","User not found");
