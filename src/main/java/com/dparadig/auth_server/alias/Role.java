@@ -17,7 +17,7 @@ public class Role implements Serializable {
 
     private static final long serialVersionUID = 1512254861L;
     private int roleId;
-    private int licenceTypeId;
+    private int customerCompanyId;
     private String name;
     private LocalDateTime createDate = LocalDateTime.now();
     private LocalDateTime modificationDate = LocalDateTime.now();

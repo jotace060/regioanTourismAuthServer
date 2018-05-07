@@ -94,7 +94,6 @@
     </update>
 
 
-
     <select id="getAllCountries" resultType="Map">
         SELECT * FROM country;
     </select>
