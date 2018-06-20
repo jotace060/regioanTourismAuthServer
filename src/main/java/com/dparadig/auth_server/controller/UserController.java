@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.dparadig.auth_server.alias.Role;
 import org.apache.ibatis.session.SqlSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -77,6 +78,49 @@ public class UserController{
             response.addProperty("message", "Successfully Registered");
             log.info("Inserted User with ID: "+customerUser.getCustomerUserId());
             createConfirmationTokenAndSendEmail(customerUser);
+            //Create ROLE
+            /*Role adminRole = new Role();
+            adminRole.setCustomerCompanyId(customerCompany.getCustomerCompantId());
+            adminRole.setName("ROLE_ADMIN");
+            adminRole.setStatus(1);
+            this.sqlSession.insert("insertRoleAdmin", adminRole);
+            log.info("Inserted ROLE_ADMIN with ID: "+adminRole.getRoleId());
+            customerUser.setRoleName("ROLE_ADMIN");
+            this.sqlSession.insert("insertUserRole",customerUser);*/
+        } catch (final DuplicateKeyException e) {
+            response.addProperty("status", "error");
+            response.addProperty("message", "This email is already registered.");
+            e.printStackTrace();
+        } catch (final Exception e) {
+            response.addProperty("status", "error");
+            response.addProperty("message", "Error 500");
+            e.printStackTrace();
+        }
+
+        return response.toString();
+    }
+
+    @RequestMapping("/registerNewUser")
+    @ResponseBody
+    public String registerNewUser(String name, String email, Integer companyId, Integer customerUserParentId, String passCurr) {
+        JsonObject response = new JsonObject();
+
+        CustomerUser customerUser = new CustomerUser();
+        customerUser.setName(name);
+        customerUser.setEmail(email);
+        customerUser.setPassCurr(passwordEncoder.encode(passCurr));
+        customerUser.setCustomerCompanyId(companyId);
+
+        try {
+            this.sqlSession.insert("insertAddedUser",customerUser);
+            response.add("data",Constants.GSON.toJsonTree(customerUser));
+            response.addProperty("status", "success");
+            response.addProperty("message", "Successfully Registered");
+            log.info("Inserted User with ID: "+customerUser.getCustomerUserId());
+            createConfirmationTokenAndSendEmail(customerUser);
+            //Create ROLE
+            customerUser.setRoleName("user");
+            this.sqlSession.insert("insertUserRole",customerUser);
         } catch (final DuplicateKeyException e) {
             response.addProperty("status", "error");
             response.addProperty("message", "This email is already registered.");

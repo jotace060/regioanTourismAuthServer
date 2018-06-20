@@ -32,5 +32,5 @@ public class CustomerUser implements Serializable {
     private int status;
     private int languageListId;
     private int usedTrial = 0;
-
+    private String roleName;
 }

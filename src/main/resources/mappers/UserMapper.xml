@@ -68,6 +68,26 @@
         (#{customerCompanyId},#{email},#{name},#{passCurr})
     </insert>
 
+    <insert id="insertAddedUser" parameterType="CustomerUser" useGeneratedKeys="true" keyProperty="customerUserId"  keyColumn="customer_user_id">
+        INSERT INTO customer_user
+        (`customer_company_id`,
+        `email`,
+        `name`,
+        `pass_curr`,
+        `validation_status`,
+        `status`)
+        VALUES
+        (#{customerCompanyId},#{email},#{name},#{passCurr},1,1)
+    </insert>
+    <insert id="insertUserRole" parameterType="CustomerUser">
+        INSERT INTO customer_user_role
+        (`customer_user_id`,
+        `role_id`)
+        VALUES
+        (#{customerUserId}, (SELECT role_id FROM role where customer_company_id = #{customerCompanyId} AND name = #{roleName}))
+    </insert>
+
+
     <update id="validateUser">
         update customer_user set
         validation_status = 1
@@ -101,4 +121,13 @@
     <select id="getAllLanguages" resultType="Map">
         SELECT * FROM language_list where valid = 1;
     </select>
+
+    <insert id="insertRoleAdmin" parameterType="Role" useGeneratedKeys="true" keyProperty="roleId"  keyColumn="role_id">
+        INSERT INTO role
+        (`customer_company_id`,
+        `name`,
+        `status`)
+        VALUES
+        (#{customerCompanyId}, #{name}, #{status})
+    </insert>
 </mapper>
