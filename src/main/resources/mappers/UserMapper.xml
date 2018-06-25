@@ -50,6 +50,20 @@
         LEFT JOIN privilege as p on  p.privilege_id = rp.privilege_id
         WHERE rp.role_id = #{roleId};
     </select>
+    
+    <select id="getCustomerCompanyByName" resultType="LicenseCompany">
+    	SELECT cc.customer_company_id, lc.license_company_id
+    	FROM customer_company cc
+		LEFT JOIN license_company lc
+			ON lc.customer_company_id = cc.customer_company_id
+			AND lc.license_type_id IN
+				(SELECT lt.license_type_id FROM license_type lt
+				LEFT JOIN product p ON lt.product_id = p.product_id
+				WHERE p.name = #{portalType})
+			AND lc.status = 1
+		WHERE cc.company_name = #{companyName}
+		ORDER BY cc.customer_company_id
+    </select>
 
     <insert id="insertCompanyName" parameterType="CustomerCompany" useGeneratedKeys="true" keyProperty="customerCompantId"  keyColumn="customer_company_id">
         INSERT INTO customer_company

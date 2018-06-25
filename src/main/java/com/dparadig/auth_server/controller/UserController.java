@@ -1,6 +1,7 @@
 package com.dparadig.auth_server.controller;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.dparadig.auth_server.alias.CustomerCompany;
 import com.dparadig.auth_server.alias.CustomerUser;
+import com.dparadig.auth_server.alias.LicenseCompany;
 import com.dparadig.auth_server.alias.Token;
 import com.dparadig.auth_server.common.Constants;
 import com.dparadig.auth_server.common.TokenType;
@@ -58,24 +60,72 @@ public class UserController{
 
     @RequestMapping("/insertUser")
     @ResponseBody
-    public String insertUser(String name, String email, String companyName, String passCurr) {
+    public String insertUser(String name, String email, String companyName, String passCurr, String portalType) {
         JsonObject response = new JsonObject();
 
         CustomerCompany customerCompany = new CustomerCompany();
         customerCompany.setCompanyName(companyName);
-        this.sqlSession.insert("insertCompanyName",customerCompany);
-        log.info("Inserted Company with ID: "+customerCompany.getCustomerCompantId());
+        
+        Map<String, Object> companyMap = new HashMap<String, Object>();
+        companyMap.put("companyName", companyName);
+        companyMap.put("portalType", portalType);
+        Integer company_id = null;
+        boolean companyExists = false, companyWithLicense = false;
+        
+        // Primero validar si existe una empresa con el nombre companyName. Si no existe, crear una.
+        // De existir, buscar por empresa hasta encontrar una que tenga licencia activa.
+        List<LicenseCompany> companies = this.sqlSession.selectList("getCustomerCompanyByName", companyMap);
+        for (LicenseCompany company : companies) {
+        	if (company.getLicenseCompanyId() == null) {
+        		if (!companyExists) {
+            		company_id = company.getCustomerCompanyId();
+            		companyWithLicense = false;
+            		companyExists = true;
+        		}
+        	}
+        	else {
+        		company_id = company.getCustomerCompanyId();
+        		companyExists = true;
+        		companyWithLicense = true;
+        		break;
+        	}
+        }
+        
         CustomerUser customerUser = new CustomerUser();
         customerUser.setName(name);
         customerUser.setEmail(email);
         customerUser.setPassCurr(passwordEncoder.encode(passCurr));
+        
+        if (!companyExists) {
+        	// Nueva empresa
+        	this.sqlSession.insert("insertCompanyName",customerCompany);
+            log.info("Inserted Company with ID: "+customerCompany.getCustomerCompantId());
+            response.addProperty("license", "create");
+        }
+        else {
+        	customerCompany.setCustomerCompantId(company_id);
+        	if (!companyWithLicense) {
+                response.addProperty("license", "create");
+        	}
+        	else {
+        		// Si la compania tiene licencia, insertar usuario en 'Espera de validacion'
+        		customerUser.setValidationStatus(0);
+                response.addProperty("license", "exists");
+        	}
+        }
+        
         customerUser.setCustomerCompanyId(customerCompany.getCustomerCompantId());
-
+        String sucessRegister = "Successfully Registered";
+        String licensedRegister = ". Since you are on a licensed company, you have to contact the Administrator for your account validation";
+        
         try {
             this.sqlSession.insert("insertUser",customerUser);
             response.add("data",Constants.GSON.toJsonTree(customerUser));
             response.addProperty("status", "success");
-            response.addProperty("message", "Successfully Registered");
+            if (companyExists && companyWithLicense) 
+            	response.addProperty("message", sucessRegister + licensedRegister);
+            else
+                response.addProperty("message", sucessRegister);            	
             log.info("Inserted User with ID: "+customerUser.getCustomerUserId());
             createConfirmationTokenAndSendEmail(customerUser);
             //Create ROLE
