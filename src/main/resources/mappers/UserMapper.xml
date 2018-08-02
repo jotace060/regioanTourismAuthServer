@@ -50,6 +50,19 @@
         LEFT JOIN privilege as p on  p.privilege_id = rp.privilege_id
         WHERE rp.role_id = #{roleId};
     </select>
+
+    <select id="getRolePrivilegesOfUser" resultType="Privilege">
+        SELECT p.`privilege_id`,
+        p.`name`,
+        p.`description`,
+        p.`privilege_type`,
+        p.`category`,
+        p.`status`
+        FROM `role_privilege` as  rp
+        LEFT JOIN privilege as p on  p.privilege_id = rp.privilege_id
+        LEFT JOIN customer_user_role as cur ON rp.role_id=cur.role_id
+        WHERE cur.customer_user_id = #{customerUserID};
+    </select>
     
     <select id="getCustomerCompanyByName" resultType="LicenseCompany">
     	SELECT cc.customer_company_id, lc.license_company_id

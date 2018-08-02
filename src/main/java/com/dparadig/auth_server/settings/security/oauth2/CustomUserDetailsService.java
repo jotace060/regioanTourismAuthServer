@@ -31,12 +31,13 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        log.info("RMR - loadUserByUsername starting...");
         CustomerUser customerUser = userService.getUserByEmail(email);
         if (null == customerUser)
             throw new UsernameNotFoundException("Bad credentials");
         log.info("Founded "+customerUser.getCustomerUserId());
         List<Role> userRoles = userService.getUserRoles(customerUser.getCustomerUserId());
-        List<Privilege> userPrivileges = userService.getRolePrivileges(customerUser.getCustomerUserId());
+        List<Privilege> userPrivileges = userService.getRolePrivilegesOfUser(customerUser.getCustomerUserId());
         log.info("userRoles "+userRoles.size());
         log.info("userPrivileges "+userPrivileges.size());
 
