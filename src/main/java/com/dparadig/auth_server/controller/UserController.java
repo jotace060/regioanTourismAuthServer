@@ -45,6 +45,8 @@ public class UserController{
     private final SqlSession sqlSession;
     @Value("${frontend.url}")
     private String frontendURL;
+    @Value("${frontend.pnotificaciones_url}")
+    private String pNotificacionesFeURL;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
 
@@ -127,7 +129,7 @@ public class UserController{
             else
                 response.addProperty("message", sucessRegister);            	
             log.info("Inserted User with ID: "+customerUser.getCustomerUserId());
-            createConfirmationTokenAndSendEmail(customerUser);
+            createConfirmationTokenAndSendEmail(customerUser, portalType);
             //Create ROLE
             /*Role adminRole = new Role();
             adminRole.setCustomerCompanyId(customerCompany.getCustomerCompantId());
@@ -152,7 +154,7 @@ public class UserController{
 
     @RequestMapping("/registerNewUser")
     @ResponseBody
-    public String registerNewUser(String name, String email, Integer companyId, Integer customerUserParentId, String passCurr) {
+    public String registerNewUser(String name, String email, Integer companyId, Integer customerUserParentId, String passCurr, @RequestParam(required=false) String portalType) {
         JsonObject response = new JsonObject();
 
         CustomerUser customerUser = new CustomerUser();
@@ -167,7 +169,7 @@ public class UserController{
             response.addProperty("status", "success");
             response.addProperty("message", "Successfully Registered");
             log.info("Inserted User with ID: "+customerUser.getCustomerUserId());
-            createConfirmationTokenAndSendEmail(customerUser);
+            createConfirmationTokenAndSendEmail(customerUser, portalType);
             //Create ROLE
             customerUser.setRoleName("user");
             this.sqlSession.insert("insertUserRole",customerUser);
@@ -189,12 +191,15 @@ public class UserController{
                 LocalDateTime.now().plusHours(duration),type);
     }
 
-    private void createConfirmationTokenAndSendEmail(CustomerUser customerUser){
+    private void createConfirmationTokenAndSendEmail(CustomerUser customerUser, String portalType){
         Token token = createToken(customerUser,3, TokenType.CONFIRMATION);
         log.info("Email confirmation token created: "+customerUser.getCustomerUserId());
         this.sqlSession.insert("insertToken",token);
         new Thread(() -> {
-            sendConfirmationEmail(customerUser,token);
+            if (portalType == null || portalType.isEmpty())
+                sendConfirmationEmail(customerUser,token);
+            else if (portalType.equalsIgnoreCase("notificaciones"))
+                sendConfirmationEmailESP(customerUser,token, pNotificacionesFeURL);
         }).start();
     }
 
@@ -206,6 +211,16 @@ public class UserController{
             log.error("Confirmation Email was NOT sent to "+user.getEmail() );
         return url;
     }
+
+    private String sendConfirmationEmailESP(CustomerUser user, Token token, String feUrl) {
+        String url = feUrl+"/#/activation?t="+token.getToken();
+        if(emailService.sendConfirmationEmailESP(user.getEmail(),url))
+            log.info("Confirmation Email sent to "+user.getEmail() );
+        else
+            log.error("Confirmation Email was NOT sent to "+user.getEmail() );
+        return url;
+    }
+
     /*
         FALTA: Cambiar busqueda de token por columna token, a userID + token
      */
@@ -262,7 +277,7 @@ public class UserController{
 
     @RequestMapping("/passReset")
     @ResponseBody
-    private String passReset(String email){
+    private String passReset(String email, @RequestParam(required=false) String portalType){
         JsonObject response = new JsonObject();
         CustomerUser customerUser = this.sqlSession.selectOne("getUserByEmail",email);
         if(customerUser != null){
@@ -270,7 +285,10 @@ public class UserController{
             log.info("Pass reset token created: "+customerUser.getCustomerUserId());
             this.sqlSession.insert("insertToken",token);
             new Thread(() -> {
-                sendPassResetEmail(customerUser,token);
+                if (portalType == null || portalType.isEmpty())
+                    sendPassResetEmail(customerUser,token);
+                else if (portalType.equalsIgnoreCase("notificaciones"))
+                    sendPassResetEmailESP(customerUser,token, pNotificacionesFeURL);
             }).start();
             response.addProperty("message","Password reset link has been sent to "+email);
             response.addProperty("status","success");
@@ -285,6 +303,15 @@ public class UserController{
     private String sendPassResetEmail(CustomerUser user, Token token) {
         String url = frontendURL+"/#/login?t="+token.getToken();
         if(emailService.sendPassResetEmail(user.getEmail(),url))
+            log.info("Confirmation Email sent to "+user.getEmail() );
+        else
+            log.error("Confirmation Email was NOT sent to "+user.getEmail() );
+        return url;
+    }
+
+    private String sendPassResetEmailESP(CustomerUser user, Token token, String feUrl) {
+        String url = feUrl+"/#/login?t="+token.getToken();
+        if(emailService.sendPassResetEmailESP(user.getEmail(),url))
             log.info("Confirmation Email sent to "+user.getEmail() );
         else
             log.error("Confirmation Email was NOT sent to "+user.getEmail() );
