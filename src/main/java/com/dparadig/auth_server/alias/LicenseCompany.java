@@ -25,5 +25,6 @@ public class LicenseCompany implements Serializable {
     private LocalDateTime createDate = LocalDateTime.now();
     private LocalDateTime modificationDate = LocalDateTime.now();
     private LocalDateTime lastPayDate;
+    private LocalDateTime exprDate;
     private String cdkey;
 }
