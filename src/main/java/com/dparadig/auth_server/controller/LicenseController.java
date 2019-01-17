@@ -47,13 +47,11 @@ public class LicenseController {
     @ResponseBody
     public String checkLicense(@RequestBody LibLicenseRequest licRequest) {
         JsonObject response = new JsonObject();
+        String cdkey = licRequest.getCdkey();
+        String pkey = licRequest.getPkey();
 
         Map<String, Object> licenseMap = new HashMap<String, Object>();
         licenseMap.put("cdkey", licRequest.getCdkey());
-        //licenseMap.put("mac", licRequest);
-        
-        // Primero validar si existe una empresa con el nombre companyName. Si no existe, crear una.
-        // De existir, buscar por empresa hasta encontrar una que tenga licencia activa.
         LicenseCompany dbLicense = this.sqlSession.selectOne("getLicenseInfo", licenseMap);
         if (dbLicense != null){
             log.debug("found "+dbLicense.getInstanceName());
@@ -61,52 +59,74 @@ public class LicenseController {
             LocalDateTime expireDate = dbLicense.getExprDate();
             log.debug("checking if license is expired "+expireDate+" > "+now+" ?");
             if ( now.isBefore(expireDate)) {
-                //revisar si cdkey esta fijo a una MAC
-                boolean isValid = true;
-                List<ProductOption> pOptions = this.sqlSession.selectList("getProductOptionsOfLicense", licenseMap);
-                if (pOptions != null && !pOptions.isEmpty()){
-                    //existe opcion de MAC Required?
-                    boolean macNeeded = false;
-                    ProductOption macOption = null;
-                    for (ProductOption pOption : pOptions){
-                        if (pOption.getName().equalsIgnoreCase("mac required")){
-                            macOption = pOption;
-                            macNeeded = true;
-                            break;
-                        }
-                    }
-                    if (macNeeded){
-                        Map<String, Object> optionMap = new HashMap<String, Object>();
-                        optionMap.put("license_company_id", dbLicense.getLicenseCompanyId());
-                        optionMap.put("product_option_id", macOption.getProductOptionId());
-                        LicenseOption lOption = this.sqlSession.selectOne("getLicenseOption", optionMap);
-                        if (lOption == null || !lOption.getOptionValue().equalsIgnoreCase(licRequest.getMac())){
-                            isValid = false;
+                if (pkey.equalsIgnoreCase(dbLicense.getPkey())){
+                    if (dbLicense.getStatus() == 2) {
+                        if (dbLicense.getRetries() > 0) {
+                            Map<String, Object> mapUpdate = new HashMap<>();
+                            mapUpdate.put("licenseCompanyId", dbLicense.getLicenseCompanyId());
+                            int updateRows = this.sqlSession.update("discountRetries", mapUpdate);
+                            if (updateRows > 0) {
+                                response.addProperty("status", "success");
+                                response.addProperty("message", "License found");
+                            } else {
+                                //ERROR Actualizar retries
+                                response.addProperty("status", "error");
+                                response.addProperty("message", "License found but an error occurred while updating.");
+                                createDbLog("ERROR_LICENSE",
+                                        "License found but has exceeded the usage limit. ["+licRequest.getCdkey()+" / "+licRequest.getPkey()+"]",
+                                        licRequest.getCdkey(), "", "");
+                            }
+                        } else {
                             response.addProperty("status", "error");
-                            response.addProperty("message", "License already in use");
+                            response.addProperty("message", "License found but has exceeded the usage limit");
                             createDbLog("ERROR_LICENSE",
-                                    "License already in use. ["+licRequest.getCdkey()+" / "+licRequest.getMac()+"]",
+                                    "License found but has exceeded the usage limit. ["+licRequest.getCdkey()+" / "+licRequest.getPkey()+"]",
                                     licRequest.getCdkey(), "", "");
                         }
+                    } else if (dbLicense.getStatus() == 1) {
+                        response.addProperty("status", "success");
+                        response.addProperty("message", "License found");
                     }
-                } else
-                    log.debug("no product options found");
-                if (isValid) {
-                    response.addProperty("status", "success");
-                    response.addProperty("message", "License found");
+                } else if(dbLicense.getPkey() == null){
+                    //No tiene pkey registrado
+                    Map<String, Object> mapUpdate = new HashMap<>();
+                    mapUpdate.put("pkey", pkey);
+                    mapUpdate.put("licenseCompanyId", dbLicense.getLicenseCompanyId());
+                    int updateRows = this.sqlSession.update("registerPkey", mapUpdate);
+                    if (updateRows > 0) {
+                        response.addProperty("status", "success");
+                        response.addProperty("message", "License found");
+                        createDbLog("LICENSE",
+                                "License found and a pkey has been registered. ["+licRequest.getCdkey()+" / "+licRequest.getPkey()+"]",
+                                licRequest.getCdkey(), "", "");
+                    } else {
+                        //ERROR Actualizar pkey
+                        response.addProperty("status", "error");
+                        response.addProperty("message", "License found but an error occurred while updating.");
+                        createDbLog("ERROR_LICENSE",
+                                "License found but has exceeded the usage limit. ["+licRequest.getCdkey()+" / "+licRequest.getPkey()+"]",
+                                licRequest.getCdkey(), "", "");
+                    }
+                } else {
+                    //Tiene pkey registrado pero no es igual al enviado
+                    response.addProperty("status", "error");
+                    response.addProperty("message", "License does not exists");
+                    createDbLog("ERROR_LICENSE",
+                            "License found but used by an unrecognized machine. ["+licRequest.getCdkey()+" / "+licRequest.getPkey()+"]",
+                            licRequest.getCdkey(), "", "");
                 }
             } else {
                 response.addProperty("status", "error");
                 response.addProperty("message", "License found but expired");
                 createDbLog("ERROR_LICENSE",
-                        "License found but expired. ["+licRequest.getCdkey()+" / "+licRequest.getMac()+"]",
+                        "License found but expired. ["+licRequest.getCdkey()+" / "+licRequest.getPkey()+"]",
                         licRequest.getCdkey(), "", "");
             }
         } else {
             response.addProperty("status", "error");
             response.addProperty("message", "License does not exists");
             createDbLog("ERROR_LICENSE",
-                    "License does not exists. ["+licRequest.getCdkey()+" / "+licRequest.getMac()+"]",
+                    "License does not exists. ["+licRequest.getCdkey()+" / "+licRequest.getPkey()+"]",
                     licRequest.getCdkey(), "", "");
         }
 
