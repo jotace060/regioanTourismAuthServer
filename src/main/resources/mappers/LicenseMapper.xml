@@ -9,7 +9,7 @@
     <select id="getLicenseInfo" resultType="LicenseCompany">
     	SELECT *
     	FROM license_company
-		WHERE cdkey = #{cdkey}
+		WHERE cdkey = #{cdkey} AND status > 0
 		ORDER BY license_company_id ASC
     </select>
 
@@ -28,7 +28,16 @@
         LIMIT 1
     </select>
 
+    <update id="discountRetries">
+        update  license_company set
+        retries = retries - 1
+        where license_company_id = #{licenseCompanyId}
+    </update>
 
-
+    <update id="registerPkey">
+        update license_company set
+        pkey = #{pkey}
+        where license_company_id = #{licenseCompanyId}
+    </update>
 
 </mapper>
