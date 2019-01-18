@@ -3,6 +3,7 @@ package com.dparadig.auth_server.controller;
 import com.dparadig.auth_server.alias.*;
 import com.dparadig.auth_server.common.*;
 import com.dparadig.auth_server.service.EmailService;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import lombok.extern.apachecommons.CommonsLog;
 import org.apache.ibatis.session.SqlSession;
@@ -48,66 +49,87 @@ public class LicenseController {
     public String checkLicense(@RequestBody LibLicenseRequest licRequest) {
         JsonObject response = new JsonObject();
 
-        Map<String, Object> licenseMap = new HashMap<String, Object>();
-        licenseMap.put("cdkey", licRequest.getCdkey());
-        //licenseMap.put("mac", licRequest);
-        
-        // Primero validar si existe una empresa con el nombre companyName. Si no existe, crear una.
-        // De existir, buscar por empresa hasta encontrar una que tenga licencia activa.
-        LicenseCompany dbLicense = this.sqlSession.selectOne("getLicenseInfo", licenseMap);
-        if (dbLicense != null){
-            log.debug("found "+dbLicense.getInstanceName());
-            LocalDateTime now = LocalDateTime.now();
-            LocalDateTime expireDate = dbLicense.getExprDate();
-            log.debug("checking if license is expired "+expireDate+" > "+now+" ?");
-            if ( now.isBefore(expireDate)) {
-                //revisar si cdkey esta fijo a una MAC
-                boolean isValid = true;
-                List<ProductOption> pOptions = this.sqlSession.selectList("getProductOptionsOfLicense", licenseMap);
-                if (pOptions != null && !pOptions.isEmpty()){
-                    //existe opcion de MAC Required?
-                    boolean macNeeded = false;
-                    ProductOption macOption = null;
-                    for (ProductOption pOption : pOptions){
-                        if (pOption.getName().equalsIgnoreCase("mac required")){
-                            macOption = pOption;
-                            macNeeded = true;
-                            break;
+        //decrypt incomming payload
+        dpaEncrypter encrypter = new dpaEncrypter("dparadiglJc9SPQWT3n23kytdrx4internet");
+        log.debug("RMR - checkLicense: received = "+licRequest.getPayload());
+        String decryptedPayload = encrypter.decryptString(licRequest.getPayload());
+        log.debug("RMR - checkLicense: decryptedPayload = "+decryptedPayload);
+        Gson gson = new Gson();
+        JsonObject payloadObj = gson.fromJson(decryptedPayload, JsonObject.class);
+        log.debug("RMR - checkLicense: payloadObj = "+payloadObj);
+
+        if(payloadObj==null || payloadObj.isJsonNull()) {
+            response.addProperty("status", "error");
+            response.addProperty("message", "Received payload is null");
+            /*createDbLog("ERROR_LICENSE",
+                    "License does not exists. ["+licRequest.getCdkey()+" / "+licRequest.getMac()+"]",
+                    licRequest.getCdkey(), "", "");*/
+        }
+        else {
+
+            Map<String, Object> licenseMap = new HashMap<String, Object>();
+            //licenseMap.put("cdkey", licRequest.getCdkey());
+            //licenseMap.put("mac", licRequest);
+            licenseMap.put("cdkey", payloadObj.get("cdkey").getAsString());
+            log.debug("RMR - checking licenseMap: " + licenseMap);
+
+            // Primero validar si existe una empresa con el nombre companyName. Si no existe, crear una.
+            // De existir, buscar por empresa hasta encontrar una que tenga licencia activa.
+            LicenseCompany dbLicense = this.sqlSession.selectOne("getLicenseInfo", licenseMap);
+            if (dbLicense != null) {
+                log.debug("found " + dbLicense.getInstanceName());
+                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime expireDate = dbLicense.getExprDate();
+                log.debug("checking if license is expired " + expireDate + " > " + now + " ?");
+                if (now.isBefore(expireDate)) {
+                    //revisar si cdkey esta fijo a una MAC
+                    boolean isValid = true;
+                    List<ProductOption> pOptions = this.sqlSession.selectList("getProductOptionsOfLicense", licenseMap);
+                    if (pOptions != null && !pOptions.isEmpty()) {
+                        //existe opcion de MAC Required?
+                        boolean macNeeded = false;
+                        ProductOption macOption = null;
+                        for (ProductOption pOption : pOptions) {
+                            if (pOption.getName().equalsIgnoreCase("mac required")) {
+                                macOption = pOption;
+                                macNeeded = true;
+                                break;
+                            }
                         }
-                    }
-                    if (macNeeded){
-                        Map<String, Object> optionMap = new HashMap<String, Object>();
-                        optionMap.put("license_company_id", dbLicense.getLicenseCompanyId());
-                        optionMap.put("product_option_id", macOption.getProductOptionId());
-                        LicenseOption lOption = this.sqlSession.selectOne("getLicenseOption", optionMap);
-                        if (lOption == null || !lOption.getOptionValue().equalsIgnoreCase(licRequest.getMac())){
-                            isValid = false;
-                            response.addProperty("status", "error");
-                            response.addProperty("message", "License already in use");
-                            createDbLog("ERROR_LICENSE",
-                                    "License already in use. ["+licRequest.getCdkey()+" / "+licRequest.getMac()+"]",
-                                    licRequest.getCdkey(), "", "");
+                        if (macNeeded) {
+                            Map<String, Object> optionMap = new HashMap<String, Object>();
+                            optionMap.put("license_company_id", dbLicense.getLicenseCompanyId());
+                            optionMap.put("product_option_id", macOption.getProductOptionId());
+                            LicenseOption lOption = this.sqlSession.selectOne("getLicenseOption", optionMap);
+                            if (lOption == null || !lOption.getOptionValue().equalsIgnoreCase(licRequest.getMac())) {
+                                isValid = false;
+                                response.addProperty("status", "error");
+                                response.addProperty("message", "License already in use");
+                                createDbLog("ERROR_LICENSE",
+                                        "License already in use. [" + licRequest.getCdkey() + " / " + licRequest.getMac() + "]",
+                                        licRequest.getCdkey(), "", "");
+                            }
                         }
+                    } else
+                        log.debug("no product options found");
+                    if (isValid) {
+                        response.addProperty("status", "success");
+                        response.addProperty("message", "License found");
                     }
-                } else
-                    log.debug("no product options found");
-                if (isValid) {
-                    response.addProperty("status", "success");
-                    response.addProperty("message", "License found");
+                } else {
+                    response.addProperty("status", "error");
+                    response.addProperty("message", "License found but expired");
+                    createDbLog("ERROR_LICENSE",
+                            "License found but expired. [" + licRequest.getCdkey() + " / " + licRequest.getMac() + "]",
+                            licRequest.getCdkey(), "", "");
                 }
             } else {
                 response.addProperty("status", "error");
-                response.addProperty("message", "License found but expired");
+                response.addProperty("message", "License does not exists");
                 createDbLog("ERROR_LICENSE",
-                        "License found but expired. ["+licRequest.getCdkey()+" / "+licRequest.getMac()+"]",
+                        "License does not exists. [" + licRequest.getCdkey() + " / " + licRequest.getMac() + "]",
                         licRequest.getCdkey(), "", "");
             }
-        } else {
-            response.addProperty("status", "error");
-            response.addProperty("message", "License does not exists");
-            createDbLog("ERROR_LICENSE",
-                    "License does not exists. ["+licRequest.getCdkey()+" / "+licRequest.getMac()+"]",
-                    licRequest.getCdkey(), "", "");
         }
 
         log.info("RMR - checkLicense: response = "+response.toString());
