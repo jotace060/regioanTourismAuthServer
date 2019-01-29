@@ -5,12 +5,38 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.dparadig.auth_server.mapper.LicenseMapper">
-    
+    <insert id="registerLicenseInit">
+        INSERT INTO license_company (customer_company_id, license_type_id, pay_element_id, customer_user_id,
+            instance_name, expr_date, auto_renew, last_pay_date, status, cdkey, pkey, retries)
+        VALUES (
+            (SELECT customer_company_id FROM customer_company WHERE company_name = 'dpaInitLicenseCompany' ORDER BY customer_company_id ASC LIMIT 1),
+            (select lt.license_type_id from license_type lt
+                left join product p ON lt.product_id=p.product_id
+                WHERE lt.license_name IN ('trial','free')
+                AND p.name = 'dpaInitProduct'
+                ORDER BY license_type_id ASC LIMIT 1),
+            NULL,
+            (select cu.customer_user_id from customer_user cu
+                left join customer_company cc ON cu.customer_company_id=cc.customer_company_id
+                WHERE cc.company_name = 'dpaInitLicenseCompany'
+                AND cu.name = 'dpaInitLicenseUser'
+                ORDER BY cu.customer_user_id ASC LIMIT 1),
+            'Init license test', DATE_ADD(NOW(), INTERVAL 8 HOUR), 0, NOW(), 2, #{cdkey}, #{pkey}, 5
+        )
+    </insert>
+
     <select id="getLicenseInfo" resultType="LicenseCompany">
     	SELECT *
     	FROM license_company
 		WHERE cdkey = #{cdkey} AND status > 0
 		ORDER BY license_company_id ASC
+    </select>
+
+    <select id="getExistingLicenseInit" resultType="LicenseCompany">
+        SELECT *
+        FROM license_company
+        WHERE pkey = #{pkey} AND status = 2
+        ORDER BY license_company_id ASC LIMIT 1
     </select>
 
     <select id="getProductOptionsOfLicense" resultType="ProductOption">
@@ -26,6 +52,15 @@
         AND product_option_id = #{product_option_id}
         AND active = 1
         LIMIT 1
+    </select>
+
+    <select id="getAllLicenseOptions" resultType="LicenseOption">
+        SELECT po.name, po.description, po.option_default, lco.option_value
+        FROM license_company lc
+        LEFT JOIN license_company_option lco ON lc.license_company_id=lco.license_company_id
+        LEFT JOIN product_option po ON lco.product_option_id=po.product_option_id
+        WHERE lco.active=1
+        AND lc.license_company_id = #{licenseCompanyId}
     </select>
 
     <update id="discountRetries">
