@@ -14,6 +14,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.Charset;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -74,77 +76,7 @@ public class LicenseController {
             licenseMap.put("cdkey", cdkey);
             LicenseCompany dbLicense = this.sqlSession.selectOne("getLicenseInfo", licenseMap);
             if (dbLicense != null) {
-                log.debug("found " + dbLicense.getInstanceName());
-                LocalDateTime now = LocalDateTime.now();
-                LocalDateTime expireDate = dbLicense.getExprDate();
-                log.debug("checking if license is expired " + expireDate + " > " + now + " ?");
-                if (now.isBefore(expireDate)) {
-                    if (pkey.equalsIgnoreCase(dbLicense.getPkey())) {
-                        if (dbLicense.getStatus() == 2) {
-                            if (dbLicense.getRetries() > 0) {
-                                Map<String, Object> mapUpdate = new HashMap<>();
-                                mapUpdate.put("licenseCompanyId", dbLicense.getLicenseCompanyId());
-                                int updateRows = this.sqlSession.update("discountRetries", mapUpdate);
-                                if (updateRows > 0) {
-                                    response.addProperty("status", "success");
-                                    response.addProperty("message", "License found");
-                                    createDbLog("LICENSE_INIT_CHECK",
-                                            "Test License use. Retries left = "+(dbLicense.getRetries()-1)+". [" + cdkey + " / " + pkey + "]",
-                                            cdkey, "", "");
-                                } else {
-                                    //ERROR Actualizar retries
-                                    response.addProperty("status", "error");
-                                    response.addProperty("message", "License found but an error occurred while updating.");
-                                    createDbLog("ERROR_LICENSE",
-                                            "License found but has exceeded the usage limit. [" + cdkey + " / " + pkey + "]",
-                                            cdkey, "", "");
-                                }
-                            } else {
-                                response.addProperty("status", "error");
-                                response.addProperty("message", "License found but has exceeded the usage limit");
-                                createDbLog("ERROR_LICENSE",
-                                        "License found but has exceeded the usage limit. [" + cdkey + " / " + pkey + "]",
-                                        cdkey, "", "");
-                            }
-                        } else if (dbLicense.getStatus() == 1) {
-                            response.addProperty("status", "success");
-                            response.addProperty("message", "License found");
-                        }
-                    } else if (dbLicense.getPkey() == null) {
-                        //No tiene pkey registrado
-                        Map<String, Object> mapUpdate = new HashMap<>();
-                        mapUpdate.put("pkey", pkey);
-                        mapUpdate.put("licenseCompanyId", dbLicense.getLicenseCompanyId());
-                        int updateRows = this.sqlSession.update("registerPkey", mapUpdate);
-                        if (updateRows > 0) {
-                            response.addProperty("status", "success");
-                            response.addProperty("message", "License found");
-                            createDbLog("LICENSE",
-                                    "License found and a pkey has been registered. [" + cdkey + " / " + pkey + "]",
-                                    cdkey, "", "");
-                        } else {
-                            //ERROR Actualizar pkey
-                            response.addProperty("status", "error");
-                            response.addProperty("message", "License found but an error occurred while updating.");
-                            createDbLog("ERROR_LICENSE",
-                                    "License found but has exceeded the usage limit. [" + cdkey + " / " + pkey + "]",
-                                    cdkey, "", "");
-                        }
-                    } else {
-                        //Tiene pkey registrado pero no es igual al enviado
-                        response.addProperty("status", "error");
-                        response.addProperty("message", "License does not exists");
-                        createDbLog("ERROR_LICENSE",
-                                "License found but used by an unrecognized machine. [" + cdkey + " / " + pkey + "]",
-                                cdkey, "", "");
-                    }
-                } else {
-                    response.addProperty("status", "error");
-                    response.addProperty("message", "License does not exists");
-                    createDbLog("ERROR_LICENSE",
-                            "License found but expired. [" + cdkey + " / " + licRequest.getPkey() + "]",
-                            cdkey, "", "");
-                }
+                response = checkExistingCdkey(dbLicense, cdkey, pkey);
             } else {
                 response.addProperty("status", "error");
                 response.addProperty("message", "License does not exists");
@@ -190,100 +122,40 @@ public class LicenseController {
             licenseMap.put("cdkey", cdkey);
             LicenseCompany dbLicense = this.sqlSession.selectOne("getLicenseInfo", licenseMap);
             if (dbLicense != null) {
-                log.debug("found " + dbLicense.getInstanceName());
-                LocalDateTime now = LocalDateTime.now();
-                LocalDateTime expireDate = dbLicense.getExprDate();
-                log.debug("checking if license is expired " + expireDate + " > " + now + " ?");
-                if (now.isBefore(expireDate)) {
-                    if (pkey.equalsIgnoreCase(dbLicense.getPkey())) {
-                        if (dbLicense.getStatus() == 2) {
-                            if (dbLicense.getRetries() > 0) {
-                                Map<String, Object> mapUpdate = new HashMap<>();
-                                mapUpdate.put("licenseCompanyId", dbLicense.getLicenseCompanyId());
-                                int updateRows = this.sqlSession.update("discountRetries", mapUpdate);
-                                if (updateRows > 0) {
-                                    response.addProperty("status", "success");
-                                    response.addProperty("message", "License found");
-                                    createDbLog("LICENSE_INIT_CHECK",
-                                            "Test License use. Retries left = "+(dbLicense.getRetries()-1)+". [" + cdkey + " / " + pkey + "]",
-                                            cdkey, "", "");
-                                } else {
-                                    //ERROR Actualizar retries
-                                    response.addProperty("status", "error");
-                                    response.addProperty("message", "License found but an error occurred while updating.");
-                                    createDbLog("ERROR_LICENSE",
-                                            "License found but has exceeded the usage limit. [" + cdkey + " / " + pkey + "]",
-                                            cdkey, "", "");
-                                }
-                            } else {
-                                response.addProperty("status", "error");
-                                response.addProperty("message", "License found but has exceeded the usage limit");
-                                createDbLog("ERROR_LICENSE",
-                                        "License found but has exceeded the usage limit. [" + cdkey + " / " + pkey + "]",
-                                        cdkey, "", "");
-                            }
-                        } else if (dbLicense.getStatus() == 1) {
-                            response.addProperty("status", "success");
-                            response.addProperty("message", "License found");
-                        }
-                    } else if (dbLicense.getPkey() == null) {
-                        //No tiene pkey registrado
-                        Map<String, Object> mapUpdate = new HashMap<>();
-                        mapUpdate.put("pkey", pkey);
-                        mapUpdate.put("licenseCompanyId", dbLicense.getLicenseCompanyId());
-                        int updateRows = this.sqlSession.update("registerPkey", mapUpdate);
-                        if (updateRows > 0) {
-                            response.addProperty("status", "success");
-                            response.addProperty("message", "License found");
-                            createDbLog("LICENSE",
-                                    "License found and a pkey has been registered. [" + cdkey + " / " + pkey + "]",
-                                    cdkey, "", "");
-                        } else {
-                            //ERROR Actualizar pkey
-                            response.addProperty("status", "error");
-                            response.addProperty("message", "License found but an error occurred while updating.");
-                            createDbLog("ERROR_LICENSE",
-                                    "License found but has exceeded the usage limit. [" + cdkey + " / " + pkey + "]",
-                                    cdkey, "", "");
-                        }
-                    } else {
-                        //Tiene pkey registrado pero no es igual al enviado
-                        response.addProperty("status", "error");
-                        response.addProperty("message", "License does not exists");
-                        createDbLog("ERROR_LICENSE",
-                                "License found but used by an unrecognized machine. [" + cdkey + " / " + pkey + "]",
-                                cdkey, "", "");
-                    }
-                } else {
-                    response.addProperty("status", "error");
-                    response.addProperty("message", "License does not exists");
-                    createDbLog("ERROR_LICENSE",
-                            "License found but expired. [" + cdkey + " / " + pkey + "]",
-                            cdkey, "", "");
-                }
+                response = checkExistingCdkey(dbLicense, cdkey, pkey);
             } else {
                 //Revisar si existen mas licencias en modo INIT/TEST en este dispositivo
                 licenseMap.put("pkey", pkey);
                 LicenseCompany dbLicenseInit = this.sqlSession.selectOne("getExistingLicenseInit", licenseMap);
                 if (dbLicenseInit == null) {
                     //Crear Nueva cdkey en modo INIT/TEST (2)
-                    Map<String, Object> mapInsert = new HashMap<>();
-                    mapInsert.put("cdkey", cdkey);
-                    mapInsert.put("pkey", pkey);
-                    int insertedRows = this.sqlSession.insert("registerLicenseInit", mapInsert);
-                    if (insertedRows > 0) {
-                        response.addProperty("status", "success");
-                        response.addProperty("message", "License found");
-                        createDbLog("LICENSE",
-                                "New Init License registered. [" + cdkey + " / " + pkey + "/5retries]",
-                                cdkey, "", "");
-                    } else {
-                        //ERROR registrar key
+                    log.debug("RMR - creating new ckey from object: "+payloadObj);
+                    String newCdkey = createCdKey(payloadObj);
+                    if (newCdkey==null || newCdkey.isEmpty()) {
                         response.addProperty("status", "error");
                         response.addProperty("message", "License does not exists");
                         createDbLog("ERROR_LICENSE",
-                                "Error registering New Init License. [" + cdkey + " / " + pkey + "]",
+                                "Error creating new cdkey. [" + cdkey + " / " + pkey + "]",
                                 cdkey, "", "");
+                    } else {
+                        Map<String, Object> mapInsert = new HashMap<>();
+                        mapInsert.put("cdkey", createCdKey(payloadObj));
+                        mapInsert.put("pkey", pkey);
+                        int insertedRows = this.sqlSession.insert("registerLicenseInit", mapInsert);
+                        if (insertedRows > 0) {
+                            response.addProperty("status", "success");
+                            response.addProperty("message", "License found");
+                            createDbLog("LICENSE",
+                                    "New Init License registered. [" + cdkey + " / " + pkey + "/5retries]",
+                                    cdkey, "", "");
+                        } else {
+                            //ERROR registrar key
+                            response.addProperty("status", "error");
+                            response.addProperty("message", "License does not exists");
+                            createDbLog("ERROR_LICENSE",
+                                    "Error registering New Init License. [" + cdkey + " / " + pkey + "]",
+                                    cdkey, "", "");
+                        }
                     }
                 } else {
                     response.addProperty("status", "error");
@@ -303,6 +175,94 @@ public class LicenseController {
         return encryptedResponse.toString();
     }
 
+    private JsonObject checkExistingCdkey(LicenseCompany dbLicense, String cdkey, String pkey){
+        JsonObject response = new JsonObject();
+        log.debug("found " + dbLicense.getInstanceName());
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expireDate = dbLicense.getExprDate();
+        log.debug("checking if license is expired " + expireDate + " > " + now + " ?");
+        if (now.isBefore(expireDate)) {
+            Map<String, Object> mapQuery = new HashMap<>();
+            mapQuery.put("licenseCompanyId", dbLicense.getLicenseCompanyId());
+            if (pkey.equalsIgnoreCase(dbLicense.getPkey())) {
+                if (dbLicense.getStatus() == 2) {
+                    if (dbLicense.getRetries() > 0) {
+                        int updateRows = this.sqlSession.update("discountRetries", mapQuery);
+                        if (updateRows > 0) {
+                            response.addProperty("status", "success");
+                            response.addProperty("message", "License found");
+                            createDbLog("LICENSE_INIT_CHECK",
+                                    "Test License use. Retries left = "+(dbLicense.getRetries()-1)+". [" + cdkey + " / " + pkey + "]",
+                                    cdkey, "", "");
+                        } else {
+                            //ERROR Actualizar retries
+                            response.addProperty("status", "error");
+                            response.addProperty("message", "License found but an error occurred while updating.");
+                            createDbLog("ERROR_LICENSE",
+                                    "License found but has exceeded the usage limit. [" + cdkey + " / " + pkey + "]",
+                                    cdkey, "", "");
+                        }
+                    } else {
+                        response.addProperty("status", "error");
+                        response.addProperty("message", "License found but has exceeded the usage limit");
+                        createDbLog("ERROR_LICENSE",
+                                "License found but has exceeded the usage limit. [" + cdkey + " / " + pkey + "]",
+                                cdkey, "", "");
+                    }
+                } else if (dbLicense.getStatus() == 1) {
+                    response.addProperty("status", "success");
+                    response.addProperty("message", "License found");
+                    //Obtener opciones asociadas a licencia
+                    List<LicenseOption> options = this.sqlSession.selectList("getAllLicenseOptions", mapQuery);
+                    if (options!=null){
+                        JsonObject optionsObj = new JsonObject();
+                        for (LicenseOption option : options) {
+                            if (option.getOptionValue()!=null)
+                                optionsObj.addProperty(option.getName(), option.getOptionValue());
+                            else
+                                optionsObj.addProperty(option.getName(), option.getOptionDefault());
+                        }
+                        response.add("options", optionsObj);
+                    }
+                }
+            } else if (dbLicense.getPkey() == null) {
+                //No tiene pkey registrado
+                Map<String, Object> mapUpdate = new HashMap<>();
+                mapUpdate.put("pkey", pkey);
+                mapUpdate.put("licenseCompanyId", dbLicense.getLicenseCompanyId());
+                int updateRows = this.sqlSession.update("registerPkey", mapUpdate);
+                if (updateRows > 0) {
+                    response.addProperty("status", "success");
+                    response.addProperty("message", "License found");
+                    createDbLog("LICENSE",
+                            "License found and a pkey has been registered. [" + cdkey + " / " + pkey + "]",
+                            cdkey, "", "");
+                } else {
+                    //ERROR Actualizar pkey
+                    response.addProperty("status", "error");
+                    response.addProperty("message", "License found but an error occurred while updating.");
+                    createDbLog("ERROR_LICENSE",
+                            "License found but has exceeded the usage limit. [" + cdkey + " / " + pkey + "]",
+                            cdkey, "", "");
+                }
+            } else {
+                //Tiene pkey registrado pero no es igual al enviado
+                response.addProperty("status", "error");
+                response.addProperty("message", "License does not exists");
+                createDbLog("ERROR_LICENSE",
+                        "License found but used by an unrecognized machine. [" + cdkey + " / " + pkey + "]",
+                        cdkey, "", "");
+            }
+        } else {
+            response.addProperty("status", "error");
+            response.addProperty("message", "License does not exists");
+            createDbLog("ERROR_LICENSE",
+                    "License found but expired. [" + cdkey + " / " + pkey + "]",
+                    cdkey, "", "");
+        }
+        return response;
+    }
+
     private void createDbLog(String log_type, String message, String license, String source_name, String source_ip){
         Map<String, Object> logMap = new HashMap<String, Object>();
         logMap.put("log_type", log_type);
@@ -312,6 +272,37 @@ public class LicenseController {
         logMap.put("source_ip", source_ip);
         log.debug("Inserting DB log: "+message);
         this.sqlSession.insert("insertLog", logMap);
+    }
+
+    private String createCdKey(JsonObject payloadObj){
+        /*byte tmpMacByte[] = new byte[6];
+        SecureRandom secRandom = new SecureRandom() ;
+        secRandom.nextBytes(tmpMacByte);
+        String mac = encodeHexString(tmpMacByte);
+        if (payloadObj.get("mac")!=null && !payloadObj.get("mac").isJsonNull())
+            mac = payloadObj.get("mac").getAsString();
+        */
+        String timestamp = payloadObj.get("timestamp").getAsString();
+        String hostname = payloadObj.get("hostname").getAsString();
+        String mac = payloadObj.get("mac").getAsString();
+        String productName = payloadObj.get("productName").getAsString();
+        String ret = AuthCommons.getCdKey(hostname, mac, timestamp, productName);
+        log.debug("RMR - createCdKey: returning = ["+ret+"]");
+        return ret;
+    }
+
+    public String byteToHex(byte num) {
+        char[] hexDigits = new char[2];
+        hexDigits[0] = Character.forDigit((num >> 4) & 0xF, 16);
+        hexDigits[1] = Character.forDigit((num & 0xF), 16);
+        return new String(hexDigits);
+    }
+    public String encodeHexString(byte[] byteArray) {
+        StringBuffer hexStringBuffer = new StringBuffer();
+        for (int i = 0; i < byteArray.length; i++) {
+            hexStringBuffer.append(byteToHex(byteArray[i]));
+        }
+        return hexStringBuffer.toString();
     }
     //endregion
 }

@@ -19,4 +19,7 @@ public class LicenseOption implements Serializable {
     private Integer productOptionId;
     private Integer active;
     private String optionValue;
+    private String optionDefault;
+    private String name;
+    private String description;
 }

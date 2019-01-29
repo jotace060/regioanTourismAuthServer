@@ -54,6 +54,15 @@
         LIMIT 1
     </select>
 
+    <select id="getAllLicenseOptions" resultType="LicenseOption">
+        SELECT po.name, po.description, po.option_default, lco.option_value
+        FROM license_company lc
+        LEFT JOIN license_company_option lco ON lc.license_company_id=lco.license_company_id
+        LEFT JOIN product_option po ON lco.product_option_id=po.product_option_id
+        WHERE lco.active=1
+        AND lc.license_company_id = #{licenseCompanyId}
+    </select>
+
     <update id="discountRetries">
         update  license_company set
         retries = retries - 1
