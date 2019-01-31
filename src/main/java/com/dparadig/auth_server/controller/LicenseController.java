@@ -3,8 +3,10 @@ package com.dparadig.auth_server.controller;
 import com.dparadig.auth_server.alias.*;
 import com.dparadig.auth_server.common.*;
 import com.dparadig.auth_server.service.EmailService;
+//import com.dparadig.lib_licencias.dpaLicencia;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.extern.apachecommons.CommonsLog;
 import org.apache.ibatis.session.SqlSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -139,12 +141,13 @@ public class LicenseController {
                                 cdkey, "", "");
                     } else {
                         Map<String, Object> mapInsert = new HashMap<>();
-                        mapInsert.put("cdkey", createCdKey(payloadObj));
+                        mapInsert.put("cdkey", newCdkey);
                         mapInsert.put("pkey", pkey);
                         int insertedRows = this.sqlSession.insert("registerLicenseInit", mapInsert);
                         if (insertedRows > 0) {
                             response.addProperty("status", "success");
                             response.addProperty("message", "License found");
+                            response.addProperty("misc", newCdkey);
                             createDbLog("LICENSE",
                                     "New Init License registered. [" + cdkey + " / " + pkey + "/5retries]",
                                     cdkey, "", "");
@@ -304,5 +307,19 @@ public class LicenseController {
         }
         return hexStringBuffer.toString();
     }
+
+    //liblic Master Forwarder test
+    /*@RequestMapping(value = "/liblic/checkSlaveReq", method = RequestMethod.POST, consumes = "application/json")
+    @ResponseBody
+    public String checkSlaveReq(@RequestBody String reqString) {
+        log.info("RMR - checkSlaveReq: proccessing = "+reqString);
+        JsonParser parser = new JsonParser();
+        JsonObject reqObj = parser.parse(reqString).getAsJsonObject();
+        dpaLicencia myDpaTest = new dpaLicencia("dev", "JUnitTests", false, false);
+        JsonObject response = myDpaTest.processSlaveReq(reqObj);
+        log.info("RMR - checkSlaveReq: response = "+response);
+        return response.toString();
+    }*/
+
     //endregion
 }

@@ -21,7 +21,7 @@
                 WHERE cc.company_name = 'dpaInitLicenseCompany'
                 AND cu.name = 'dpaInitLicenseUser'
                 ORDER BY cu.customer_user_id ASC LIMIT 1),
-            'Init license test', DATE_ADD(NOW(), INTERVAL 8 HOUR), 0, NOW(), 2, #{cdkey}, #{pkey}, 5
+            'Init license test', DATE_ADD(NOW(), INTERVAL 7 DAY), 0, NOW(), 2, #{cdkey}, #{pkey}, 5
         )
     </insert>
 
