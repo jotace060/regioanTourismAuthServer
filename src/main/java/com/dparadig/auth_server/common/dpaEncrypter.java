@@ -45,8 +45,6 @@ public class dpaEncrypter {
             KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, iterationCount, AES_KEY_SIZE);
             SecretKey tmp = factory.generateSecret(spec);
             secretKey = new SecretKeySpec(tmp.getEncoded(), "AES");
-
-            log.info("RMR - dpaEncrypter: key "+password+" -> "+new String(secretKey.getEncoded()));
         } catch (Exception e){
             log.error("starting dpaEncrypter: exception: "+e.getMessage());
         }
@@ -73,7 +71,7 @@ public class dpaEncrypter {
             byteBuffer.put(cipherText);
             byte[] cipherMessage = Base64.getUrlEncoder().encode(byteBuffer.array());
             ret = new String(cipherMessage, "UTF-8");
-            log.info("RMR - encryptString: encripted to base64: "+ ret);
+            log.debug("RMR - encryptString: encripted to base64: "+ ret);
         } catch (Exception e){
             log.error("encryptString: exception: "+e.getMessage());
         }
@@ -102,7 +100,7 @@ public class dpaEncrypter {
 
             byte[] plainText= cipher.doFinal(cipherText);
             ret = new String(plainText);
-            log.info("RMR - decryptString: original msg is: "+ ret);
+            log.debug("RMR - decryptString: original msg is: "+ ret);
         } catch (Exception e){
             log.error("decryptString: exception: "+e.getMessage());
         }
