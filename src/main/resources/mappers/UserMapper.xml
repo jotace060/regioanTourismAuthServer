@@ -32,6 +32,62 @@
         WHERE cur.customer_user_id = #{customerUserId}
     </select>
 
+	<select id="selectRolesForProduct" parameterType="hashmap" resultType="hashmap">
+	SELECT *
+	FROM
+		customer_user_role cur
+		left join role r on r.role_id = cur.role_id
+		LEFT JOIN product p ON p.product_id = r.product_id
+		LEFT JOIN license_company lc ON lc.license_company_id = cur.license_company_id	
+		LEFT JOIN license_type lt ON lt.license_type_id = lc.license_type_id
+	WHERE 
+		cur.customer_user_id = #{customerUserId}
+		AND p.name = #{productName}
+		AND lc.customer_company_id = #{companyId}
+		AND lt.product_id = p.product_id;
+	</select>
+
+	<delete id="deleteUserRolesForProduct" parameterType="hashmap">
+		DELETE 
+		FROM customer_user_role
+		WHERE 
+			customer_user_id = #{customerUserId}
+			AND role_id = #{roleId}
+			AND license_company_id=#{licenseCompanyId}
+	</delete>
+
+	<delete id="deleteUserRoles" parameterType="hashmap">
+		delete from customer_user_role where customer_user_id = ${customerUserId};
+	</delete>
+	
+	<delete id="deleteUserTokens" parameterType="hashmap">
+		delete from token where customer_user_id = ${customerUserId};
+	</delete>
+	
+	<delete id="deleteUserData">
+		delete from customer_user where customer_user_id = ${customerUserId};
+	</delete>
+
+	<update id="updateUserRolesForProduct" parameterType="hashmap">			
+		<if test="roleId != null">
+		INSERT INTO customer_user_role (customer_user_id, role_id, license_company_id) 
+		VALUES
+			(
+				#{customerUserId}, 
+				#{roleId}, 
+				(
+					SELECT license_company_id 
+					FROM license_company 
+						LEFT JOIN license_type lt ON lt.license_type_id = license_company.license_type_id
+						LEFT JOIN product p ON p.product_id = lt.product_id
+					WHERE 
+						customer_company_id = #{companyId}
+						AND p.name = #{productName}
+					LIMIT 1
+				)
+			);
+		</if>
+	</update>
 
     <select id="getUserValidationStatus" resultType="int">
         SELECT validation_status

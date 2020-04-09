@@ -59,6 +59,21 @@ public class UserController{
     public String getAllUser() {
         return Constants.GSON.toJson(this.sqlSession.selectList("getAllUser"));
     }
+    
+    @RequestMapping("/deleteUser")
+    @ResponseBody
+    public String deleteUser(Long customerUserId) {
+    	JsonObject response = new JsonObject();
+    	System.out.println("deleteUser: " + customerUserId);
+    	HashMap<String, Long> options = new HashMap<String, Long>();
+    	options.put("customerUserId", customerUserId);
+    	
+    	this.sqlSession.delete("deleteUserRoles", options);
+    	this.sqlSession.delete("deleteUserTokens", options);
+    	this.sqlSession.delete("deleteUserData", options);
+    	
+    	return response.toString();
+    }
 
     @RequestMapping("/insertUser")
     @ResponseBody
@@ -152,6 +167,67 @@ public class UserController{
         return response.toString();
     }
 
+    @RequestMapping("/updateUserRolesForProduct")
+    @ResponseBody
+    public String updateUserRolesForProduct(String customerUserId, String productName, String companyId, String roleId) {
+    	JsonObject response = new JsonObject();
+    	HashMap<String, String> options = new HashMap<String, String>();
+    	options.put("customerUserId", customerUserId);
+    	options.put("productName", productName);
+    	options.put("companyId", companyId);
+    	options.put("roleId", roleId);
+    	
+    	List<HashMap<String, Long>> rolesToDelete = sqlSession.selectList("selectRolesForProduct", options);
+    	
+    	for(int i = 0; i < rolesToDelete.size(); i++) {
+    		Long _customerUserId = rolesToDelete.get(i).get("customer_user_id");
+    		Long _roleId = rolesToDelete.get(i).get("role_id");
+    		Long _licenseCompanyId = rolesToDelete.get(i).get("license_company_id");
+    		    		
+    		HashMap<String, Long> deleteOptions = new HashMap<String, Long>();
+    		deleteOptions.put("customerUserId", _customerUserId);
+    		deleteOptions.put("licenseCompanyId", _licenseCompanyId);
+    		deleteOptions.put("roleId", _roleId);
+    		sqlSession.delete("deleteUserRolesForProduct", deleteOptions);
+    		
+    	}
+    	
+    	if(roleId != null) {
+    		sqlSession.update("updateUserRolesForProduct", options);
+    	}
+    	
+    	return response.toString();
+    }
+    
+    @RequestMapping("/createUpdateUser")
+    @ResponseBody
+    public String createUpdateUser(String name, String email, Integer companyId, Integer customerUserParentId, String passCurr, Integer roleId) {
+    	JsonObject response = new JsonObject();
+    	
+    	CustomerUser user = null;
+    	
+    	if(customerUserParentId != null) {
+    		user = this.sqlSession.selectOne("getUserById", customerUserParentId);
+    	}
+    	
+    	if(user != null) {    		
+    		user.setName(name);
+            user.setEmail(email);
+            
+            if(passCurr != null) {
+            	user.setPassCurr(passwordEncoder.encode(passCurr));
+            	sqlSession.update("updateUserPass", user);
+            }
+            
+            sqlSession.update("updateUser", user);
+            
+    	} else {
+    		return this.registerNewUser(name, email, companyId, customerUserParentId, passCurr, null);
+    	}
+    	
+    	return response.toString();
+    }
+    
     @RequestMapping("/registerNewUser")
     @ResponseBody
     public String registerNewUser(String name, String email, Integer companyId, Integer customerUserParentId, String passCurr, @RequestParam(required=false) String portalType) {
@@ -171,8 +247,8 @@ public class UserController{
             log.info("Inserted User with ID: "+customerUser.getCustomerUserId());
             createConfirmationTokenAndSendEmail(customerUser, portalType);
             //Create ROLE
-            customerUser.setRoleName("user");
-            this.sqlSession.insert("insertUserRole",customerUser);
+            //customerUser.setRoleName("user");
+            //this.sqlSession.insert("insertUserRole",customerUser);
         } catch (final DuplicateKeyException e) {
             response.addProperty("status", "error");
             response.addProperty("message", "This email is already registered.");
@@ -249,6 +325,7 @@ public class UserController{
                         log.info("Old password for : "+token.getTokenType());
                         response.addProperty("status","error");
                     }else{
+                    	log.info("new pass: " + password);
                         customerUser.setPassCurr(passwordEncoder.encode(password));
                         this.sqlSession.update("updateUserPass",customerUser);
                         log.info("Password updated for user "+token.getCustomerUserId());
