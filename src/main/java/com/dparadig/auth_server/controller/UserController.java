@@ -43,12 +43,24 @@ public class UserController{
     private EmailService emailService;
     @Autowired
     private final SqlSession sqlSession;
+    
+    //URLs de redirect para cuando se solicita cambio de contraseña. Al solicitar cambio de contraseña se envia un 
+    //correo con un link al sitio donde se debe hacer el cambio de contraseña, dependiendo del producto (DVU, SNI, etc...)
     @Value("${frontend.url}")
     private String frontendURL;
+    
     @Value("${frontend.pnotificaciones_url}")
     private String pNotificacionesFeURL;
+    
+    @Value("${frontend.dvu_url}")
+    private String pDvuURL;
+    
+    //Token de seguridad que usan algunas APIs para aumentar la seguridad. Se usa en aquellas APIs cuyos argumentos
+    //puede ser facilmente detectados por terceras personas.
+    @Value("${privToken}")
+    private String privToken;
+    
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
 
     public UserController(SqlSession sqlSession) {
         this.sqlSession = sqlSession;
@@ -116,11 +128,11 @@ public class UserController{
         if (!companyExists) {
         	// Nueva empresa
         	this.sqlSession.insert("insertCompanyName",customerCompany);
-            log.info("Inserted Company with ID: "+customerCompany.getCustomerCompantId());
+            log.info("Inserted Company with ID: "+customerCompany.getCustomerCompanyId());
             response.addProperty("license", "create");
         }
         else {
-        	customerCompany.setCustomerCompantId(company_id);
+        	customerCompany.setCustomerCompanyId(company_id);
         	if (!companyWithLicense) {
                 response.addProperty("license", "create");
         	}
@@ -131,7 +143,7 @@ public class UserController{
         	}
         }
         
-        customerUser.setCustomerCompanyId(customerCompany.getCustomerCompantId());
+        customerUser.setCustomerCompanyId(customerCompany.getCustomerCompanyId());
         String sucessRegister = "Successfully Registered";
         String licensedRegister = ". Since you are on a licensed company, you have to contact the Administrator for your account validation";
         
@@ -366,6 +378,9 @@ public class UserController{
                     sendPassResetEmail(customerUser,token);
                 else if (portalType.equalsIgnoreCase("notificaciones"))
                     sendPassResetEmailESP(customerUser,token, pNotificacionesFeURL);
+                else if(portalType.equalsIgnoreCase("dvu")) {
+                	sendPassResetEmailESP(customerUser,token, pDvuURL);
+                }
             }).start();
             response.addProperty("message","Password reset link has been sent to "+email);
             response.addProperty("status","success");
@@ -487,6 +502,49 @@ public class UserController{
         }
 
         return response.toJson();
+    }
+    
+    
+    /**
+     * Comprueba que el token pertenezca a la companyId y al producto.
+     * @param token
+     * @param companyId
+     * @param productName
+     * @return true si pertenece, falso en otro caso
+     */
+    @RequestMapping("/checkToken")
+    @ResponseBody
+    public String checkToken(@RequestParam String token, @RequestParam String companyId, @RequestParam String productName) {
+    	Response response = new Response();
+    	
+    	HashMap<String, Object> options = new HashMap<String, Object>();
+    	options.put("cdkey", token);
+    	options.put("company_id", companyId);
+    	options.put("product_name", productName);
+    	
+    	LicenseCompany license = this.sqlSession.selectOne("getLicenseWithToken", options);
+    	
+    	response.setData(license != null); 
+    	
+    	return response.toJson();
+    }
+    
+    @RequestMapping("/getCompanyByUserEmail")
+    @ResponseBody
+    public String getCompanyByUserEmail(@RequestParam String privToken, @RequestParam String userEmail) {
+    	Response response = new Response();
+    	
+    	if(privToken.compareTo(this.privToken) != 0) {
+    		response.setStatus("error");
+    		response.setMessage("You dont have authorization to access this resource");
+    		return response.toJson();
+    	}
+    	
+    	CustomerCompany company = this.sqlSession.selectOne("getCompanyByUserEmail", userEmail);
+    	
+    	response.setData(company); 
+    	
+    	return response.toJson();
     }
 
     //region Settings

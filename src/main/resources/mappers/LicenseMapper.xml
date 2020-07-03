@@ -62,6 +62,19 @@
         WHERE lco.active=1
         AND lc.license_company_id = #{licenseCompanyId}
     </select>
+    
+    <select id="getLicenseWithToken" parameterType="hashmap" resultType="LicenseCompany">
+    	select 
+    		license_company.*
+    	from
+    		license_company
+    			left join license_type on license_type.license_type_id = license_company.license_type_id
+    			left join product on product.product_id = license_type.product_id
+    	where
+    		license_company.cdkey = #{cdkey} and
+    		license_company.customer_company_id = #{company_id} and
+    		product.name = #{product_name};
+    </select>
 
     <update id="discountRetries">
         update  license_company set
