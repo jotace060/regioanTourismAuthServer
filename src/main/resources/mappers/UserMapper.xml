@@ -106,6 +106,7 @@
         VALUES
         (#{customerCompanyId},#{email},#{name},#{passCurr},1,1)
     </insert>
+
     <insert id="insertUserRole" parameterType="CustomerUser">
         INSERT INTO customer_user_role
         (`customer_user_id`,

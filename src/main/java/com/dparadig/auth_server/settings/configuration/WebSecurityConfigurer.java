@@ -14,6 +14,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.access.channel.ChannelProcessingFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 
@@ -23,6 +24,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class WebSecurityConfigurer extends WebSecurityConfigurerAdapter {
     @Autowired
     private UserDetailsService userDetailsService;
+
+    @Autowired
+    JsonToUrlEncodedAuthenticationFilter jsonFilter;
 
     @Autowired
     public void globalUserDetails(final AuthenticationManagerBuilder auth) throws Exception {
@@ -43,6 +47,7 @@ public class WebSecurityConfigurer extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(final HttpSecurity httpSecurity) throws Exception {
         httpSecurity
+                .addFilterBefore(jsonFilter, ChannelProcessingFilter.class)
                 // we don't need CSRF because our token is invulnerable
                 .csrf().disable()
 
