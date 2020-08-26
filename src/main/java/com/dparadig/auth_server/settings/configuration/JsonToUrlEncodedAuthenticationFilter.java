@@ -49,7 +49,7 @@ public class JsonToUrlEncodedAuthenticationFilter implements Filter {
             val[0] = ((RequestFacade) request).getMethod();
             r.put("_method", val);
 
-            HttpServletRequest s = new MyServletRequestWrapper(((HttpServletRequest) request), r);
+            HttpServletRequest s = new CustomtRequestWrapper(((HttpServletRequest) request), r);
             chain.doFilter(s, response);
         } else {
             chain.doFilter(request, response);

@@ -8,10 +8,10 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MyServletRequestWrapper extends HttpServletRequestWrapper {
+public class CustomtRequestWrapper extends HttpServletRequestWrapper {
     private final HashMap<String, String[]> params;
 
-    public MyServletRequestWrapper(HttpServletRequest request, HashMap<String, String[]> params) {
+    public CustomtRequestWrapper(HttpServletRequest request, HashMap<String, String[]> params) {
         super(request);
         this.params = params;
     }
