@@ -4,9 +4,12 @@ import com.dparadig.auth_server.alias.CustomerUser;
 import com.dparadig.auth_server.alias.Privilege;
 import com.dparadig.auth_server.alias.Role;
 import com.dparadig.auth_server.service.UserService;
+import com.dparadig.auth_server.settings.configuration.CustomtRequestWrapper;
 import com.dparadig.auth_server.settings.security.oauth2.CustomUser;
 import lombok.extern.apachecommons.CommonsLog;
+import org.apache.catalina.connector.RequestFacade;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -14,10 +17,14 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import javax.servlet.http.HttpServletRequest;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.web.context.request.RequestContextListener;
 
 /**
  * @author JLabarca
@@ -31,12 +38,13 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        log.info("RMR - loadUserByUsername starting...");
         CustomerUser customerUser = userService.getUserByEmail(email);
         if (null == customerUser)
             throw new UsernameNotFoundException("Bad credentials");
         log.info("Founded "+customerUser.getCustomerUserId());
         List<Role> userRoles = userService.getUserRoles(customerUser.getCustomerUserId());
-        List<Privilege> userPrivileges = userService.getRolePrivileges(customerUser.getCustomerUserId());
+        List<Privilege> userPrivileges = userService.getRolePrivilegesOfUser(customerUser.getCustomerUserId());
         log.info("userRoles "+userRoles.size());
         log.info("userPrivileges "+userPrivileges.size());
 
@@ -47,9 +55,9 @@ public class CustomUserDetailsService implements UserDetailsService {
                     String role = p.getName().toUpperCase();
                     String[] s = role.split("_");
                     if(s[0].equals("ROLE"))
-                        return role;
+                        return p.getProductName() + "_" + role;
                     else
-                        return "ROLE_" + role;
+                        return p.getProductName() + "_ROLE_" + role;
                 })
                 .collect(Collectors.toSet());
 
@@ -60,9 +68,9 @@ public class CustomUserDetailsService implements UserDetailsService {
                     String role = p.getName().toUpperCase();
                     String[] s = role.split("_");
                     if(s[0].equals("PRIV"))
-                        return role;
+                        return p.getCategory() + "_" + role;
                     else
-                        return "PRIV_" + role;
+                        return p.getCategory() + "_PRIV_" + role;
                 })
                 .collect(Collectors.toSet());
 

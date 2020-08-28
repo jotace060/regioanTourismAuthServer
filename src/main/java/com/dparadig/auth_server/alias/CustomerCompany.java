@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 public class CustomerCompany {
 
     private static final long serialVersionUID = 51818181861L;
-    private int customerCompantId;
+    private int customerCompanyId;	// TO-DO: Error de tipeo
     private String companyName;
     private int identificationNumber;
     private String area;

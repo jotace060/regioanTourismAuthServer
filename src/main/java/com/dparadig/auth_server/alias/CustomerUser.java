@@ -21,7 +21,7 @@ public class CustomerUser implements Serializable {
     private String email;
     private String name;
     private String idDocument;
-    private int countryID;
+    private int countryId;
     private String passCurr;
     private String passPrev;
     private String passPrev2;
@@ -32,5 +32,5 @@ public class CustomerUser implements Serializable {
     private int status;
     private int languageListId;
     private int usedTrial = 0;
-
+    private String roleName;
 }

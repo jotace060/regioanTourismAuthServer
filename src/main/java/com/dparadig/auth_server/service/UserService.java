@@ -33,7 +33,13 @@ public class UserService {
     }
 
     public List<Privilege> getRolePrivileges(int roleID) {
+        log.info("RMR - getRolePrivileges: of role "+roleID);
         return this.sqlSession.selectList("getRolePrivileges",roleID);
+    }
+
+    public List<Privilege> getRolePrivilegesOfUser(long customerUserID) {
+        log.info("RMR - getRolePrivilegesOfUser: of role "+customerUserID);
+        return this.sqlSession.selectList("getRolePrivilegesOfUser",customerUserID);
     }
 
 }

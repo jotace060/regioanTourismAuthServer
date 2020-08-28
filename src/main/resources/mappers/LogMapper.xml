@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dparadig.auth_server.mapper.LogMapper">
+    
+    <select id="insertLog">
+        INSERT INTO log
+        (log_type, message, license, source_name, source_ip)
+        VALUES
+        (#{log_type}, #{message}, #{license}, #{source_name}, #{source_ip})
+    </select>
+
+</mapper>

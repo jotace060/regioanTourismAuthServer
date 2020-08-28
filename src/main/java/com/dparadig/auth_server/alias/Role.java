@@ -19,6 +19,7 @@ public class Role implements Serializable {
     private int roleId;
     private int customerCompanyId;
     private String name;
+    private String productName;
     private LocalDateTime createDate = LocalDateTime.now();
     private LocalDateTime modificationDate = LocalDateTime.now();
     private int status;

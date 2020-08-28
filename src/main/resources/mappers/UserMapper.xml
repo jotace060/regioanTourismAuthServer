@@ -25,13 +25,70 @@
     </select>
 
     <select id="getUserRoles" resultType="Role">
-        SELECT *
+        SELECT cur.*, role.*, p.name as product_name
         FROM customer_user_role as cur
         LEFT JOIN
         role on cur.role_id = role.role_id
+        LEFT JOIN product p ON role.product_id = p.product_id
         WHERE cur.customer_user_id = #{customerUserId}
     </select>
 
+	<select id="selectRolesForProduct" parameterType="hashmap" resultType="hashmap">
+	SELECT *
+	FROM
+		customer_user_role cur
+		left join role r on r.role_id = cur.role_id
+		LEFT JOIN product p ON p.product_id = r.product_id
+		LEFT JOIN license_company lc ON lc.license_company_id = cur.license_company_id	
+		LEFT JOIN license_type lt ON lt.license_type_id = lc.license_type_id
+	WHERE 
+		cur.customer_user_id = #{customerUserId}
+		AND p.name = #{productName}
+		AND lc.customer_company_id = #{companyId}
+		AND lt.product_id = p.product_id;
+	</select>
+
+	<delete id="deleteUserRolesForProduct" parameterType="hashmap">
+		DELETE 
+		FROM customer_user_role
+		WHERE 
+			customer_user_id = #{customerUserId}
+			AND role_id = #{roleId}
+			AND license_company_id=#{licenseCompanyId}
+	</delete>
+
+	<delete id="deleteUserRoles" parameterType="hashmap">
+		delete from customer_user_role where customer_user_id = ${customerUserId};
+	</delete>
+	
+	<delete id="deleteUserTokens" parameterType="hashmap">
+		delete from token where customer_user_id = ${customerUserId};
+	</delete>
+	
+	<delete id="deleteUserData">
+		delete from customer_user where customer_user_id = ${customerUserId};
+	</delete>
+
+	<update id="updateUserRolesForProduct" parameterType="hashmap">			
+		<if test="roleId != null">
+		INSERT INTO customer_user_role (customer_user_id, role_id, license_company_id) 
+		VALUES
+			(
+				#{customerUserId}, 
+				#{roleId}, 
+				(
+					SELECT license_company_id 
+					FROM license_company 
+						LEFT JOIN license_type lt ON lt.license_type_id = license_company.license_type_id
+						LEFT JOIN product p ON p.product_id = lt.product_id
+					WHERE 
+						customer_company_id = #{companyId}
+						AND p.name = #{productName}
+					LIMIT 1
+				)
+			);
+		</if>
+	</update>
 
     <select id="getUserValidationStatus" resultType="int">
         SELECT validation_status
@@ -51,6 +108,33 @@
         WHERE rp.role_id = #{roleId};
     </select>
 
+    <select id="getRolePrivilegesOfUser" resultType="Privilege">
+        SELECT p.`privilege_id`,
+        p.`name`,
+        p.`description`,
+        p.`privilege_type`,
+        p.`category`,
+        p.`status`
+        FROM `role_privilege` as  rp
+        LEFT JOIN privilege as p on  p.privilege_id = rp.privilege_id
+        LEFT JOIN customer_user_role as cur ON rp.role_id=cur.role_id
+        WHERE cur.customer_user_id = #{customerUserID};
+    </select>
+    
+    <select id="getCustomerCompanyByName" resultType="LicenseCompany">
+    	SELECT cc.customer_company_id, lc.license_company_id
+    	FROM customer_company cc
+		LEFT JOIN license_company lc
+			ON lc.customer_company_id = cc.customer_company_id
+			AND lc.license_type_id IN
+				(SELECT lt.license_type_id FROM license_type lt
+				LEFT JOIN product p ON lt.product_id = p.product_id
+				WHERE p.name = #{portalType})
+			AND lc.status = 1
+		WHERE cc.company_name = #{companyName}
+		ORDER BY cc.customer_company_id
+    </select>
+
     <insert id="insertCompanyName" parameterType="CustomerCompany" useGeneratedKeys="true" keyProperty="customerCompantId"  keyColumn="customer_company_id">
         INSERT INTO customer_company
         (company_name)
@@ -67,6 +151,27 @@
         VALUES
         (#{customerCompanyId},#{email},#{name},#{passCurr})
     </insert>
+
+    <insert id="insertAddedUser" parameterType="CustomerUser" useGeneratedKeys="true" keyProperty="customerUserId"  keyColumn="customer_user_id">
+        INSERT INTO customer_user
+        (`customer_company_id`,
+        `email`,
+        `name`,
+        `pass_curr`,
+        `validation_status`,
+        `status`)
+        VALUES
+        (#{customerCompanyId},#{email},#{name},#{passCurr},1,1)
+    </insert>
+
+    <insert id="insertUserRole" parameterType="CustomerUser">
+        INSERT INTO customer_user_role
+        (`customer_user_id`,
+        `role_id`)
+        VALUES
+        (#{customerUserId}, (SELECT role_id FROM role where customer_company_id = #{customerCompanyId} AND name = #{roleName}))
+    </insert>
+
 
     <update id="validateUser">
         update customer_user set
@@ -101,4 +206,13 @@
     <select id="getAllLanguages" resultType="Map">
         SELECT * FROM language_list where valid = 1;
     </select>
+
+    <insert id="insertRoleAdmin" parameterType="Role" useGeneratedKeys="true" keyProperty="roleId"  keyColumn="role_id">
+        INSERT INTO role
+        (`customer_company_id`,
+        `name`,
+        `status`)
+        VALUES
+        (#{customerCompanyId}, #{name}, #{status})
+    </insert>
 </mapper>
