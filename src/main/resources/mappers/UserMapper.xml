@@ -25,10 +25,11 @@
     </select>
 
     <select id="getUserRoles" resultType="Role">
-        SELECT *
+        SELECT cur.*, role.*, p.name as product_name
         FROM customer_user_role as cur
         LEFT JOIN
         role on cur.role_id = role.role_id
+        LEFT JOIN product p ON role.product_id = p.product_id
         WHERE cur.customer_user_id = #{customerUserId}
     </select>
 
