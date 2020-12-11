@@ -256,6 +256,7 @@ public class UserController{
             response.add("data",Constants.GSON.toJsonTree(customerUser));
             response.addProperty("status", "success");
             response.addProperty("message", "Successfully Registered");
+            response.addProperty("customerUserId", customerUser.getCustomerUserId());
             log.info("Inserted User with ID: "+customerUser.getCustomerUserId());
             createConfirmationTokenAndSendEmail(customerUser, portalType);
             //Create ROLE
