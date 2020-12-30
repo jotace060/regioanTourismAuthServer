@@ -24,34 +24,38 @@ public class JsonToUrlEncodedAuthenticationFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException,
             ServletException {
-        if (Objects.equals(request.getContentType(), "application/json") && Objects.equals(((RequestFacade) request).getServletPath(), "/oauth/token")) {
-            InputStream is = request.getInputStream();
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        try {
+            if (Objects.equals(request.getContentType(), "application/json") && Objects.equals(((RequestFacade) request).getServletPath(), "/oauth/token")) {
+                InputStream is = request.getInputStream();
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
-            int nRead;
-            byte[] data = new byte[16384];
+                int nRead;
+                byte[] data = new byte[16384];
 
-            while ((nRead = is.read(data, 0, data.length)) != -1) {
-                buffer.write(data, 0, nRead);
-            }
-            buffer.flush();
-            byte[] json = buffer.toByteArray();
+                while ((nRead = is.read(data, 0, data.length)) != -1) {
+                    buffer.write(data, 0, nRead);
+                }
+                buffer.flush();
+                byte[] json = buffer.toByteArray();
 
-            HashMap<String, String> result = new ObjectMapper().readValue(json, HashMap.class);
-            HashMap<String, String[]> r = new HashMap<>();
-            for (String key : result.keySet()) {
+                HashMap<String, String> result = new ObjectMapper().readValue(json, HashMap.class);
+                HashMap<String, String[]> r = new HashMap<>();
+                for (String key : result.keySet()) {
+                    String[] val = new String[1];
+                    val[0] = result.get(key);
+                    r.put(key, val);
+                }
+
                 String[] val = new String[1];
-                val[0] = result.get(key);
-                r.put(key, val);
+                val[0] = ((RequestFacade) request).getMethod();
+                r.put("_method", val);
+
+                HttpServletRequest s = new CustomtRequestWrapper(((HttpServletRequest) request), r);
+                chain.doFilter(s, response);
+            } else {
+                chain.doFilter(request, response);
             }
-
-            String[] val = new String[1];
-            val[0] = ((RequestFacade) request).getMethod();
-            r.put("_method", val);
-
-            HttpServletRequest s = new CustomtRequestWrapper(((HttpServletRequest) request), r);
-            chain.doFilter(s, response);
-        } else {
+        } catch(Exception e) {
             chain.doFilter(request, response);
         }
     }
