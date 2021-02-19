@@ -25,7 +25,7 @@ public class UserService {
     }
 
     public CustomerUser getUserByEmail(String email) {
-        return this.sqlSession.selectOne("getUserByEmail",email);
+        return (CustomerUser) this.sqlSession.selectOne("getUserByEmail",email);
     }
 
     public List<Role> getUserRoles(int customerUserID) {

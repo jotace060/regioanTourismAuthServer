@@ -76,7 +76,7 @@ public class LicenseController {
             if (payloadObj.get("pkey")!=null && !payloadObj.get("pkey").isJsonNull()) pkey = payloadObj.get("pkey").getAsString();
             Map<String, Object> licenseMap = new HashMap<String, Object>();
             licenseMap.put("cdkey", cdkey);
-            LicenseCompany dbLicense = this.sqlSession.selectOne("getLicenseInfo", licenseMap);
+            LicenseCompany dbLicense = (LicenseCompany) this.sqlSession.selectOne("getLicenseInfo", licenseMap);
             if (dbLicense != null) {
                 response = checkExistingCdkey(dbLicense, cdkey, pkey);
             } else {
@@ -122,13 +122,13 @@ public class LicenseController {
             if (payloadObj.get("pkey")!=null && !payloadObj.get("pkey").isJsonNull()) pkey = payloadObj.get("pkey").getAsString();
             Map<String, Object> licenseMap = new HashMap<String, Object>();
             licenseMap.put("cdkey", cdkey);
-            LicenseCompany dbLicense = this.sqlSession.selectOne("getLicenseInfo", licenseMap);
+            LicenseCompany dbLicense = (LicenseCompany) this.sqlSession.selectOne("getLicenseInfo", licenseMap);
             if (dbLicense != null) {
                 response = checkExistingCdkey(dbLicense, cdkey, pkey);
             } else {
                 //Revisar si existen mas licencias en modo INIT/TEST en este dispositivo
                 licenseMap.put("pkey", pkey);
-                LicenseCompany dbLicenseInit = this.sqlSession.selectOne("getExistingLicenseInit", licenseMap);
+                LicenseCompany dbLicenseInit = (LicenseCompany) this.sqlSession.selectOne("getExistingLicenseInit", licenseMap);
                 if (dbLicenseInit == null) {
                     //Crear Nueva cdkey en modo INIT/TEST (2)
                     log.debug("RMR - creating new ckey from object: "+payloadObj);

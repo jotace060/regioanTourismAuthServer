@@ -219,7 +219,7 @@ public class UserController{
     	CustomerUser user = null;
     	
     	if(customerUserParentId != null) {
-    		user = this.sqlSession.selectOne("getUserById", customerUserParentId);
+    		user = (CustomerUser) this.sqlSession.selectOne("getUserById", customerUserParentId);
     	}
     	
     	if(user != null) {    		
@@ -318,7 +318,7 @@ public class UserController{
     private String newPassword(String t, String password){
         JsonObject response = new JsonObject();
         log.info("Token: "+t);
-        Token token = this.sqlSession.selectOne("getTokenByToken", t);
+        Token token = (Token) this.sqlSession.selectOne("getTokenByToken", t);
         if(token != null){
             log.info("Token found "+token.toString());
             log.info("Token expr date "+token.getExprDate());
@@ -329,7 +329,7 @@ public class UserController{
             if(token.getExprDate().isAfter(LocalDateTime.now())){
                 //Check type
                 if(token.getTokenType() == TokenType.PASS_RESET){
-                    CustomerUser customerUser = this.sqlSession.selectOne("getUserById",token.getCustomerUserId());
+                    CustomerUser customerUser = (CustomerUser) this.sqlSession.selectOne("getUserById",token.getCustomerUserId());
                     //Check new pass is not repeat
                     if( passwordEncoder.matches(password,customerUser.getPassCurr())||
                         passwordEncoder.matches(password,customerUser.getPassPrev())||
@@ -369,7 +369,7 @@ public class UserController{
     @ResponseBody
     private String passReset(String email, @RequestParam(required=false) String portalType){
         JsonObject response = new JsonObject();
-        CustomerUser customerUser = this.sqlSession.selectOne("getUserByEmail",email);
+        CustomerUser customerUser = (CustomerUser) this.sqlSession.selectOne("getUserByEmail",email);
         if(customerUser != null){
             Token token = createToken(customerUser,3, TokenType.PASS_RESET);
             log.info("Pass reset token created: "+customerUser.getCustomerUserId());
@@ -415,7 +415,7 @@ public class UserController{
     @ResponseBody
     public String confirmEmail(@RequestParam String t) {
         JsonObject response = new JsonObject();
-        Token token = this.sqlSession.selectOne("getTokenByToken", t);
+        Token token = (Token) this.sqlSession.selectOne("getTokenByToken", t);
         if(token != null){
             log.info("Token found "+token.toString());
             log.info("Token expr date "+token.getExprDate());
@@ -423,7 +423,7 @@ public class UserController{
             log.info("Token user id "+token.getCustomerUserId());
             log.info("Current date: "+LocalDateTime.now());
 
-            int validationStatus =  sqlSession.selectOne("getUserValidationStatus", token.getCustomerUserId());
+            int validationStatus = (Integer) sqlSession.selectOne("getUserValidationStatus", token.getCustomerUserId());
             log.info("validationStatus: "+validationStatus);
 
             //Check token exp date
@@ -472,7 +472,7 @@ public class UserController{
     public String otrsAuth(@RequestParam String username, @RequestParam String password) {
 
         JsonObject response = new JsonObject();
-        CustomerUser customerUser = this.sqlSession.selectOne("getUserByEmail", username);
+        CustomerUser customerUser = (CustomerUser) this.sqlSession.selectOne("getUserByEmail", username);
         log.info(customerUser.toString());
         log.info(password);
         log.info(passwordEncoder.encode(password));
@@ -523,7 +523,7 @@ public class UserController{
     	options.put("company_id", companyId);
     	options.put("product_name", productName);
     	
-    	LicenseCompany license = this.sqlSession.selectOne("getLicenseWithToken", options);
+    	LicenseCompany license = (LicenseCompany) this.sqlSession.selectOne("getLicenseWithToken", options);
     	
     	response.setData(license != null); 
     	
@@ -541,7 +541,7 @@ public class UserController{
     		return response.toJson();
     	}
     	
-    	CustomerCompany company = this.sqlSession.selectOne("getCompanyByUserEmail", userEmail);
+    	CustomerCompany company = (CustomerCompany) this.sqlSession.selectOne("getCompanyByUserEmail", userEmail);
     	
     	response.setData(company); 
     	
@@ -554,7 +554,7 @@ public class UserController{
     public String getUserById(@RequestParam int customerUserId) {
         Response response = new Response();
         try {
-            CustomerUser user = this.sqlSession.selectOne("getUserById", customerUserId);
+            CustomerUser user = (CustomerUser) this.sqlSession.selectOne("getUserById", customerUserId);
             response.setStatus(Status.SUCCESS);
             response.setData(user);
         }catch (Exception e){
