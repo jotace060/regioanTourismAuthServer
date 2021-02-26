@@ -1,29 +1,29 @@
 package com.dparadig.auth_server.controller;
 
-import com.dparadig.auth_server.alias.*;
-import com.dparadig.auth_server.common.*;
+import com.dparadig.auth_server.alias.LibLicenseRequest;
+import com.dparadig.auth_server.alias.LicenseCompany;
+import com.dparadig.auth_server.alias.LicenseOption;
+import com.dparadig.auth_server.common.AuthCommons;
+import com.dparadig.auth_server.common.Constants;
+import com.dparadig.auth_server.common.dpaEncrypter;
 import com.dparadig.auth_server.service.EmailService;
-//import com.dparadig.lib_licencias.dpaLicencia;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import lombok.extern.apachecommons.CommonsLog;
 import org.apache.ibatis.session.SqlSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.charset.Charset;
-import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+
+//import com.dparadig.lib_licencias.dpaLicencia;
 
 /**
  * @author RMujica

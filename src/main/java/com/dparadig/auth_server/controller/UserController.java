@@ -1,12 +1,13 @@
 package com.dparadig.auth_server.controller;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import com.dparadig.auth_server.alias.Role;
+import com.dparadig.auth_server.alias.CustomerCompany;
+import com.dparadig.auth_server.alias.CustomerUser;
+import com.dparadig.auth_server.alias.LicenseCompany;
+import com.dparadig.auth_server.alias.Token;
+import com.dparadig.auth_server.common.*;
+import com.dparadig.auth_server.service.EmailService;
+import com.google.gson.JsonObject;
+import lombok.extern.apachecommons.CommonsLog;
 import org.apache.ibatis.session.SqlSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,17 +19,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.dparadig.auth_server.alias.CustomerCompany;
-import com.dparadig.auth_server.alias.CustomerUser;
-import com.dparadig.auth_server.alias.LicenseCompany;
-import com.dparadig.auth_server.alias.Token;
-import com.dparadig.auth_server.common.Constants;
-import com.dparadig.auth_server.common.TokenType;
-import com.dparadig.auth_server.service.EmailService;
-import com.google.gson.JsonObject;
-import com.dparadig.auth_server.common.*;
-
-import lombok.extern.apachecommons.CommonsLog;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * @author Jlabarca

@@ -1,6 +1,7 @@
 package com.dparadig.auth_server.settings.configuration;
 
 import com.dparadig.auth_server.settings.security.oauth2.CustomUser;
+import com.dparadig.auth_server.settings.security.oauth2.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -11,7 +12,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.access.channel.ChannelProcessingFilter;
@@ -22,7 +22,7 @@ import org.springframework.security.web.access.channel.ChannelProcessingFilter;
 @ComponentScan(basePackageClasses = CustomUser.class)
 public class WebSecurityConfigurer extends WebSecurityConfigurerAdapter {
     @Autowired
-    private UserDetailsService userDetailsService;
+    private CustomUserDetailsService userDetailsService;
 
     @Autowired
     JsonToUrlEncodedAuthenticationFilter jsonFilter;

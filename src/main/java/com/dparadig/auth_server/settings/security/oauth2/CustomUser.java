@@ -1,13 +1,10 @@
 package com.dparadig.auth_server.settings.security.oauth2;
 
 import com.dparadig.auth_server.alias.CustomerUser;
-import com.dparadig.auth_server.alias.Role;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 
 import java.util.Collection;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Dparadig authentication server User implementation
@@ -27,14 +24,6 @@ public class CustomUser extends User {
         this.customerUser = customerUser;
     }
 
-    /*
-    public Set<String> getUserRolesNames() {
-        return getUserRoles().stream()
-                .map(p -> p.getName())
-                .collect(Collectors.toSet());
-    }
-    */
-
     public CustomerUser getCustomerUser() {
         return customerUser;
     }
@@ -42,8 +31,4 @@ public class CustomUser extends User {
     public void setCustomerUser(CustomerUser user) {
         this.customerUser = user;
     }
-
-    /*public int getId() {
-        return user.getCustomerUserID();
-    }*/
 }
