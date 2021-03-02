@@ -16,12 +16,6 @@ import java.util.Date;
  */
 class LocalDateTimeAdapter implements JsonSerializer<LocalDateTime> {
 
-    // Epoch Seconds
-    /*@Override
-    public JsonElement serialize(LocalDateTime localDateTime, Type type, JsonSerializationContext jsonSerializationContext) {
-        long sec = localDateTime.toInstant(ZoneOffset.UTC).getEpochSecond();
-        return new JsonPrimitive(sec);
-    }*/
     @Override
     public JsonElement serialize(LocalDateTime localDateTime, Type type, JsonSerializationContext jsonSerializationContext) {
         Instant instant = localDateTime.atZone(ZoneId.systemDefault()).toInstant();

@@ -1,10 +1,5 @@
 package com.dparadig.auth_server.settings.security.jwt;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import com.dparadig.auth_server.settings.security.oauth2.CustomUser;
 import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +8,10 @@ import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.token.TokenEnhancer;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 @CommonsLog
 @Configuration
