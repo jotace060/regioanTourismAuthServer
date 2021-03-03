@@ -43,7 +43,7 @@ public class AuthorizationServerConfiguration extends AuthorizationServerConfigu
     @Override
     public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
         clients.inMemory()
-                .withClient("dparadig").secret("ddp4r4d1g")
+                .withClient("dparadig").secret("$2y$12$D.obd64W7bGf9QiLlJ71NeMyT0eFzgaOhuL2/oYyyb6Mha1WX1TkO")
                 .authorizedGrantTypes("password", "authorization_code", "refresh_token", "implicit")
                 .scopes("read", "write")
                 .accessTokenValiditySeconds(expirationSeconds)

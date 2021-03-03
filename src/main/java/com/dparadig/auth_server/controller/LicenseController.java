@@ -1,29 +1,29 @@
 package com.dparadig.auth_server.controller;
 
-import com.dparadig.auth_server.alias.*;
-import com.dparadig.auth_server.common.*;
+import com.dparadig.auth_server.alias.LibLicenseRequest;
+import com.dparadig.auth_server.alias.LicenseCompany;
+import com.dparadig.auth_server.alias.LicenseOption;
+import com.dparadig.auth_server.common.AuthCommons;
+import com.dparadig.auth_server.common.Constants;
+import com.dparadig.auth_server.common.dpaEncrypter;
 import com.dparadig.auth_server.service.EmailService;
-//import com.dparadig.lib_licencias.dpaLicencia;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import lombok.extern.apachecommons.CommonsLog;
 import org.apache.ibatis.session.SqlSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.charset.Charset;
-import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+
+//import com.dparadig.lib_licencias.dpaLicencia;
 
 /**
  * @author RMujica
@@ -76,7 +76,7 @@ public class LicenseController {
             if (payloadObj.get("pkey")!=null && !payloadObj.get("pkey").isJsonNull()) pkey = payloadObj.get("pkey").getAsString();
             Map<String, Object> licenseMap = new HashMap<String, Object>();
             licenseMap.put("cdkey", cdkey);
-            LicenseCompany dbLicense = this.sqlSession.selectOne("getLicenseInfo", licenseMap);
+            LicenseCompany dbLicense = (LicenseCompany) this.sqlSession.selectOne("getLicenseInfo", licenseMap);
             if (dbLicense != null) {
                 response = checkExistingCdkey(dbLicense, cdkey, pkey);
             } else {
@@ -122,13 +122,13 @@ public class LicenseController {
             if (payloadObj.get("pkey")!=null && !payloadObj.get("pkey").isJsonNull()) pkey = payloadObj.get("pkey").getAsString();
             Map<String, Object> licenseMap = new HashMap<String, Object>();
             licenseMap.put("cdkey", cdkey);
-            LicenseCompany dbLicense = this.sqlSession.selectOne("getLicenseInfo", licenseMap);
+            LicenseCompany dbLicense = (LicenseCompany) this.sqlSession.selectOne("getLicenseInfo", licenseMap);
             if (dbLicense != null) {
                 response = checkExistingCdkey(dbLicense, cdkey, pkey);
             } else {
                 //Revisar si existen mas licencias en modo INIT/TEST en este dispositivo
                 licenseMap.put("pkey", pkey);
-                LicenseCompany dbLicenseInit = this.sqlSession.selectOne("getExistingLicenseInit", licenseMap);
+                LicenseCompany dbLicenseInit = (LicenseCompany) this.sqlSession.selectOne("getExistingLicenseInit", licenseMap);
                 if (dbLicenseInit == null) {
                     //Crear Nueva cdkey en modo INIT/TEST (2)
                     log.debug("RMR - creating new ckey from object: "+payloadObj);

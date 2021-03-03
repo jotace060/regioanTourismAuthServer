@@ -4,12 +4,8 @@ import com.dparadig.auth_server.alias.CustomerUser;
 import com.dparadig.auth_server.alias.Privilege;
 import com.dparadig.auth_server.alias.Role;
 import com.dparadig.auth_server.service.UserService;
-import com.dparadig.auth_server.settings.configuration.CustomtRequestWrapper;
-import com.dparadig.auth_server.settings.security.oauth2.CustomUser;
 import lombok.extern.apachecommons.CommonsLog;
-import org.apache.catalina.connector.RequestFacade;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -17,14 +13,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.web.context.request.RequestContextListener;
 
 /**
  * @author JLabarca

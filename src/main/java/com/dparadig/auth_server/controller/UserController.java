@@ -1,12 +1,13 @@
 package com.dparadig.auth_server.controller;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import com.dparadig.auth_server.alias.Role;
+import com.dparadig.auth_server.alias.CustomerCompany;
+import com.dparadig.auth_server.alias.CustomerUser;
+import com.dparadig.auth_server.alias.LicenseCompany;
+import com.dparadig.auth_server.alias.Token;
+import com.dparadig.auth_server.common.*;
+import com.dparadig.auth_server.service.EmailService;
+import com.google.gson.JsonObject;
+import lombok.extern.apachecommons.CommonsLog;
 import org.apache.ibatis.session.SqlSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,17 +19,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.dparadig.auth_server.alias.CustomerCompany;
-import com.dparadig.auth_server.alias.CustomerUser;
-import com.dparadig.auth_server.alias.LicenseCompany;
-import com.dparadig.auth_server.alias.Token;
-import com.dparadig.auth_server.common.Constants;
-import com.dparadig.auth_server.common.TokenType;
-import com.dparadig.auth_server.service.EmailService;
-import com.google.gson.JsonObject;
-import com.dparadig.auth_server.common.*;
-
-import lombok.extern.apachecommons.CommonsLog;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * @author Jlabarca
@@ -219,7 +214,7 @@ public class UserController{
     	CustomerUser user = null;
     	
     	if(customerUserParentId != null) {
-    		user = this.sqlSession.selectOne("getUserById", customerUserParentId);
+    		user = (CustomerUser) this.sqlSession.selectOne("getUserById", customerUserParentId);
     	}
     	
     	if(user != null) {    		
@@ -256,6 +251,7 @@ public class UserController{
             response.add("data",Constants.GSON.toJsonTree(customerUser));
             response.addProperty("status", "success");
             response.addProperty("message", "Successfully Registered");
+            response.addProperty("customerUserId", customerUser.getCustomerUserId());
             log.info("Inserted User with ID: "+customerUser.getCustomerUserId());
             createConfirmationTokenAndSendEmail(customerUser, portalType);
             //Create ROLE
@@ -317,7 +313,7 @@ public class UserController{
     private String newPassword(String t, String password){
         JsonObject response = new JsonObject();
         log.info("Token: "+t);
-        Token token = this.sqlSession.selectOne("getTokenByToken", t);
+        Token token = (Token) this.sqlSession.selectOne("getTokenByToken", t);
         if(token != null){
             log.info("Token found "+token.toString());
             log.info("Token expr date "+token.getExprDate());
@@ -328,7 +324,7 @@ public class UserController{
             if(token.getExprDate().isAfter(LocalDateTime.now())){
                 //Check type
                 if(token.getTokenType() == TokenType.PASS_RESET){
-                    CustomerUser customerUser = this.sqlSession.selectOne("getUserById",token.getCustomerUserId());
+                    CustomerUser customerUser = (CustomerUser) this.sqlSession.selectOne("getUserById",token.getCustomerUserId());
                     //Check new pass is not repeat
                     if( passwordEncoder.matches(password,customerUser.getPassCurr())||
                         passwordEncoder.matches(password,customerUser.getPassPrev())||
@@ -368,7 +364,7 @@ public class UserController{
     @ResponseBody
     private String passReset(String email, @RequestParam(required=false) String portalType){
         JsonObject response = new JsonObject();
-        CustomerUser customerUser = this.sqlSession.selectOne("getUserByEmail",email);
+        CustomerUser customerUser = (CustomerUser) this.sqlSession.selectOne("getUserByEmail",email);
         if(customerUser != null){
             Token token = createToken(customerUser,3, TokenType.PASS_RESET);
             log.info("Pass reset token created: "+customerUser.getCustomerUserId());
@@ -414,7 +410,7 @@ public class UserController{
     @ResponseBody
     public String confirmEmail(@RequestParam String t) {
         JsonObject response = new JsonObject();
-        Token token = this.sqlSession.selectOne("getTokenByToken", t);
+        Token token = (Token) this.sqlSession.selectOne("getTokenByToken", t);
         if(token != null){
             log.info("Token found "+token.toString());
             log.info("Token expr date "+token.getExprDate());
@@ -422,7 +418,7 @@ public class UserController{
             log.info("Token user id "+token.getCustomerUserId());
             log.info("Current date: "+LocalDateTime.now());
 
-            int validationStatus =  sqlSession.selectOne("getUserValidationStatus", token.getCustomerUserId());
+            int validationStatus = (Integer) sqlSession.selectOne("getUserValidationStatus", token.getCustomerUserId());
             log.info("validationStatus: "+validationStatus);
 
             //Check token exp date
@@ -471,7 +467,7 @@ public class UserController{
     public String otrsAuth(@RequestParam String username, @RequestParam String password) {
 
         JsonObject response = new JsonObject();
-        CustomerUser customerUser = this.sqlSession.selectOne("getUserByEmail", username);
+        CustomerUser customerUser = (CustomerUser) this.sqlSession.selectOne("getUserByEmail", username);
         log.info(customerUser.toString());
         log.info(password);
         log.info(passwordEncoder.encode(password));
@@ -522,7 +518,7 @@ public class UserController{
     	options.put("company_id", companyId);
     	options.put("product_name", productName);
     	
-    	LicenseCompany license = this.sqlSession.selectOne("getLicenseWithToken", options);
+    	LicenseCompany license = (LicenseCompany) this.sqlSession.selectOne("getLicenseWithToken", options);
     	
     	response.setData(license != null); 
     	
@@ -540,7 +536,7 @@ public class UserController{
     		return response.toJson();
     	}
     	
-    	CustomerCompany company = this.sqlSession.selectOne("getCompanyByUserEmail", userEmail);
+    	CustomerCompany company = (CustomerCompany) this.sqlSession.selectOne("getCompanyByUserEmail", userEmail);
     	
     	response.setData(company); 
     	
@@ -553,7 +549,7 @@ public class UserController{
     public String getUserById(@RequestParam int customerUserId) {
         Response response = new Response();
         try {
-            CustomerUser user = this.sqlSession.selectOne("getUserById", customerUserId);
+            CustomerUser user = (CustomerUser) this.sqlSession.selectOne("getUserById", customerUserId);
             response.setStatus(Status.SUCCESS);
             response.setData(user);
         }catch (Exception e){
