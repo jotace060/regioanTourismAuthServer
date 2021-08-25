@@ -66,7 +66,8 @@ public class UserController{
     public String getAllUser() {
         return Constants.GSON.toJson(this.sqlSession.selectList("getAllUser"));
     }
-    
+
+    @Deprecated
     @RequestMapping("/deleteUser")
     @ResponseBody
     public String deleteUser(Long customerUserId) {
@@ -151,7 +152,7 @@ public class UserController{
             else
                 response.addProperty("message", sucessRegister);            	
             log.info("Inserted User with ID: "+customerUser.getCustomerUserId());
-            createConfirmationTokenAndSendEmail(customerUser, portalType);
+            //createConfirmationTokenAndSendEmail(customerUser, portalType);
             //Create ROLE
             /*Role adminRole = new Role();
             adminRole.setCustomerCompanyId(customerCompany.getCustomerCompantId());
@@ -205,7 +206,8 @@ public class UserController{
     	
     	return response.toString();
     }
-    
+
+    @Deprecated
     @RequestMapping("/createUpdateUser")
     @ResponseBody
     public String createUpdateUser(String name, String email, Integer companyId, Integer customerUserParentId, String passCurr, Integer roleId) {
@@ -253,7 +255,7 @@ public class UserController{
             response.addProperty("message", "Successfully Registered");
             response.addProperty("customerUserId", customerUser.getCustomerUserId());
             log.info("Inserted User with ID: "+customerUser.getCustomerUserId());
-            createConfirmationTokenAndSendEmail(customerUser, portalType);
+            //createConfirmationTokenAndSendEmail(customerUser, portalType);
             //Create ROLE
             //customerUser.setRoleName("user");
             //this.sqlSession.insert("insertUserRole",customerUser);
