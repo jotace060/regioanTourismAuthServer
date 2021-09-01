@@ -236,7 +236,8 @@ public class UserController{
     	
     	return response.toString();
     }
-    
+
+    @Deprecated
     @RequestMapping("/registerNewUser")
     @ResponseBody
     public String registerNewUser(String name, String email, Integer companyId, Integer customerUserParentId, String passCurr, @RequestParam(required=false) String portalType) {
