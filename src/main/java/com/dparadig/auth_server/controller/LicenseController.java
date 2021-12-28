@@ -49,7 +49,7 @@ public class LicenseController {
         this.sqlSession = sqlSession;
     }
 
-    @RequestMapping(value = "/liblic/checkLicense", method = RequestMethod.POST, consumes = "application/json")
+    @PostMapping(value = "/liblic/checkLicense", consumes = "application/json")
     @ResponseBody
     public String checkLicense(@RequestBody LibLicenseRequest licRequest) {
         JsonObject response = new JsonObject();
@@ -99,7 +99,7 @@ public class LicenseController {
     }
 
     //Solo para pruebas de nodos, limite de usos inicial = 5
-    @RequestMapping(value = "/liblic/checkLicenseInit", method = RequestMethod.POST, consumes = "application/json")
+    @PostMapping(value = "/liblic/checkLicenseInit", consumes = "application/json")
     @ResponseBody
     public String checkLicenseInit(@RequestBody LibLicenseRequest licRequest) {
         JsonObject response = new JsonObject();

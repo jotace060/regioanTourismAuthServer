@@ -14,10 +14,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
+import springfox.documentation.annotations.ApiIgnore;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -61,14 +59,17 @@ public class UserController{
         this.sqlSession = sqlSession;
     }
 
-    @RequestMapping("/getAllUser")
+    @GetMapping("/getAllUser")
     @ResponseBody
     public String getAllUser() {
-        return Constants.GSON.toJson(this.sqlSession.selectList("getAllUser"));
+
+           return Constants.GSON.toJson(this.sqlSession.selectList("getAllUser"));
     }
 
+    //POST: PBM DVU SNI DISCOVERY ENTEL OTRS
+    @ApiIgnore
     @Deprecated
-    @RequestMapping("/deleteUser")
+    @PostMapping("/deleteUser")
     @ResponseBody
     public String deleteUser(Long customerUserId) {
     	JsonObject response = new JsonObject();
@@ -82,8 +83,8 @@ public class UserController{
     	
     	return response.toString();
     }
-
-    @RequestMapping("/insertUser")
+    //POST: PBM DVU SNI DISCOVERY ENTEL
+    @PostMapping("/insertUser")
     @ResponseBody
     public String insertUser(String name, String email, String companyName, String passCurr, String portalType) {
         JsonObject response = new JsonObject();
@@ -174,8 +175,8 @@ public class UserController{
 
         return response.toString();
     }
-
-    @RequestMapping("/updateUserRolesForProduct")
+    //POST PBM DVU SNI DISCOVERY
+    @PostMapping("/updateUserRolesForProduct")
     @ResponseBody
     public String updateUserRolesForProduct(String customerUserId, String productName, String companyId, String roleId) {
     	JsonObject response = new JsonObject();
@@ -206,9 +207,10 @@ public class UserController{
     	
     	return response.toString();
     }
-
+    //POST PBM DVU SNI DISCOVERY
+    @ApiIgnore
     @Deprecated
-    @RequestMapping("/createUpdateUser")
+    @PostMapping("/createUpdateUser")
     @ResponseBody
     public String createUpdateUser(String name, String email, Integer companyId, Integer customerUserParentId, String passCurr, Integer roleId) {
     	JsonObject response = new JsonObject();
@@ -236,9 +238,10 @@ public class UserController{
     	
     	return response.toString();
     }
-
+    //POST PBM DVU SNI DISCOVERY
+    @ApiIgnore
     @Deprecated
-    @RequestMapping("/registerNewUser")
+    @PostMapping("/registerNewUser")
     @ResponseBody
     public String registerNewUser(String name, String email, Integer companyId, Integer customerUserParentId, String passCurr, @RequestParam(required=false) String portalType) {
         JsonObject response = new JsonObject();
@@ -311,7 +314,8 @@ public class UserController{
     /*
         FALTA: Cambiar busqueda de token por columna token, a userID + token
      */
-    @RequestMapping("/newPassword")
+    //POST PBM DVU SNI DISCOVERY ENTEL
+    @PostMapping("/newPassword")
     @ResponseBody
     private String newPassword(String t, String password){
         JsonObject response = new JsonObject();
@@ -362,8 +366,8 @@ public class UserController{
 
         return response.toString();
     }
-
-    @RequestMapping("/passReset")
+    //POST PBM DVU SNI DISCOVERY ENTEL
+    @PostMapping("/passReset")
     @ResponseBody
     private String passReset(String email, @RequestParam(required=false) String portalType){
         JsonObject response = new JsonObject();
@@ -408,8 +412,8 @@ public class UserController{
             log.error("Confirmation Email was NOT sent to "+user.getEmail() );
         return url;
     }
-
-    @RequestMapping("/confirmEmail")
+    //POST PBM DVU SNI DISCOVERY ENTEL
+    @PostMapping("/confirmEmail")
     @ResponseBody
     public String confirmEmail(@RequestParam String t) {
         JsonObject response = new JsonObject();
@@ -465,7 +469,7 @@ public class UserController{
     dentro del OTRS Dashboard.
      */
 
-    @RequestMapping("/otrsAuth")
+    @GetMapping("/otrsAuth")
     @ResponseBody
     public String otrsAuth(@RequestParam String username, @RequestParam String password) {
 
@@ -486,7 +490,7 @@ public class UserController{
         return response.toString();
     }
 
-    @RequestMapping("/getAllCompanyUsersBylLicenseCompanyId")
+    @GetMapping("/getAllCompanyUsersBylLicenseCompanyId")
     @ResponseBody
         public String getAllCompanyUsersBylLicenseCompanyId(@RequestParam int licenseCompanyId) {
         Response response = new Response();
@@ -502,8 +506,8 @@ public class UserController{
 
         return response.toJson();
     }
-    
-    
+
+
     /**
      * Comprueba que el token pertenezca a la companyId y al producto.
      * @param token
@@ -511,7 +515,7 @@ public class UserController{
      * @param productName
      * @return true si pertenece, falso en otro caso
      */
-    @RequestMapping("/checkToken")
+    @GetMapping("/checkToken")
     @ResponseBody
     public String checkToken(@RequestParam String token, @RequestParam String companyId, @RequestParam String productName) {
     	Response response = new Response();
@@ -527,7 +531,7 @@ public class UserController{
     	
     	return response.toJson();
     }
-    
+    //GET PBM ,POST en DVU | EXCEPCION
     @RequestMapping("/getCompanyByUserEmail")
     @ResponseBody
     public String getCompanyByUserEmail(@RequestParam String privToken, @RequestParam String userEmail) {
@@ -547,7 +551,8 @@ public class UserController{
     }
 
     //region Settings
-    @RequestMapping("/getUserById")
+    //GET PBM SNI, NO ESTA EN DVU, GET ENTEL
+    @GetMapping("/getUserById")
     @ResponseBody
     public String getUserById(@RequestParam int customerUserId) {
         Response response = new Response();
@@ -560,14 +565,15 @@ public class UserController{
         }
         return response.toJson();
     }
-
-    @RequestMapping("/getAllCountries")
+    //GET PBM SNI, NO ESTA EN DVU, GET ENTEL
+    @GetMapping("/getAllCountries")
     @ResponseBody
     public String getAllCountries() {
         return ControllerCommons.simpleSelectListResponse(sqlSession,"getAllCountries");
     }
 
-    @RequestMapping("/getAllLanguages")
+    //GET PBM SNI , NO ESTA EN DVU, GET ENTEL
+    @GetMapping("/getAllLanguages")
     @ResponseBody
     public String getAllLanguages() {
         return ControllerCommons.simpleSelectListResponse(sqlSession,"getAllLanguages");
