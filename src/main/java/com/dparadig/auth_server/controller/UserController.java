@@ -6,12 +6,15 @@ import com.dparadig.auth_server.alias.LicenseCompany;
 import com.dparadig.auth_server.alias.Token;
 import com.dparadig.auth_server.common.*;
 import com.dparadig.auth_server.service.EmailService;
+import com.dparadig.auth_server.service.UserService;
 import com.google.gson.JsonObject;
 import lombok.extern.apachecommons.CommonsLog;
 import org.apache.ibatis.session.SqlSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -36,6 +39,9 @@ public class UserController{
     private EmailService emailService;
     @Autowired
     private final SqlSession sqlSession;
+
+    // Timer en segundos para bloquear los accesos de las cuentas
+    private final int timer = 30;
     
     //URLs de redirect para cuando se solicita cambio de contrasena. Al solicitar cambio de contrasena se envia un
     //correo con un link al sitio donde se debe hacer el cambio de contrasena, dependiendo del producto (DVU, SNI, etc...)
@@ -66,6 +72,47 @@ public class UserController{
            return Constants.GSON.toJson(this.sqlSession.selectList("getAllUser"));
     }
 
+    @GetMapping("/checkAccess")
+    @ResponseBody
+    public ResponseEntity<Integer> restoreAccess (String email) {
+        CustomerUser user = this.sqlSession.selectOne("getUserByEmail", email);
+        if (user == null) {
+            return ResponseEntity.ok().body(1);
+        }
+        // Revisar si el usuario tiene acceso al sistema
+        int user_id = this.sqlSession.selectOne("getUserIdByEmail", email);
+        int validate_access = this.sqlSession.selectOne("getAccessValue", user_id);
+        if (validate_access == 0) {
+            int get_time = this.sqlSession.selectOne("getTimeAccess", user_id);
+            if (get_time >= this.timer) {
+                this.sqlSession.update("updateAccess", user_id);
+                return ResponseEntity.ok().body(1);
+            } else {
+                return ResponseEntity.ok().body(0);
+            }
+        } else {
+            return ResponseEntity.ok().body(1);
+        }
+    }
+
+    @GetMapping("/configureUserAccess")
+    @ResponseBody
+    public ResponseEntity<String> configureUserAccess(String email) {
+        CustomerUser user = this.sqlSession.selectOne("getUserByEmail", email);
+        if (user == null) {
+            return ResponseEntity.badRequest().body("El usuario no se encuentra registrado");
+        }
+        int user_id = this.sqlSession.selectOne("getUserIdByEmail", email);
+        int sessions_failed = this.sqlSession.selectOne("getSessionsFailed", user_id);
+        if (sessions_failed == 2) {
+            this.sqlSession.update("denyAccess", user_id);
+            return ResponseEntity.ok().body("Tu cuenta ha sido suspendida temporalmente, por favor comunícate con soporte.");
+        } else {
+            this.sqlSession.insert("registerNewSessionFailed", user_id);
+            return ResponseEntity.ok().body("Usuario y contraseña no coinciden");
+        }
+    }
+
     //POST: PBM DVU SNI DISCOVERY ENTEL OTRS
     @ApiIgnore
     @Deprecated
@@ -83,6 +130,7 @@ public class UserController{
     	
     	return response.toString();
     }
+
     //POST: PBM DVU SNI DISCOVERY ENTEL
     @PostMapping("/insertUser")
     @ResponseBody

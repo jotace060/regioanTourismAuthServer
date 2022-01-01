@@ -28,6 +28,10 @@ public class UserService {
         return (CustomerUser) this.sqlSession.selectOne("getUserByEmail",email);
     }
 
+    public int getUserIdByEmail(String email) {
+        return this.sqlSession.selectOne("getUserIdByEmail", email);
+    }
+
     public List<Role> getUserRoles(int customerUserID) {
         return this.sqlSession.selectList("getUserRoles",customerUserID);
     }
