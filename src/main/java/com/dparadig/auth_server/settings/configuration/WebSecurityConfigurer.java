@@ -62,24 +62,10 @@ public class WebSecurityConfigurer extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 //.antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                .antMatchers("/status","/swagger-resources/**","/swagger-ui.html", "/v2/api-docs", "/webjars/**"
-                ,"/swagger-resources" ,"/configuration/ui","/configuration/**","/configuration/security","/swagger-ui/**","/swagger-ui","/csrf","/").permitAll()
+                .antMatchers("/**").permitAll()
                 .anyRequest().authenticated().and().formLogin(Customizer.withDefaults()).httpBasic(Customizer.withDefaults());
 
-        httpSecurity.headers().contentTypeOptions();
-        httpSecurity.headers().xssProtection();
-        httpSecurity.headers().httpStrictTransportSecurity();
-        httpSecurity.headers().frameOptions();
-        httpSecurity.headers().cacheControl();
 
-    }
-
-    @Autowired
-    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-        auth.inMemoryAuthentication()
-                .withUser("dparadig")
-                .password(passwordEncoder().encode("ddp4r4d1g"))
-                .authorities("ADMIN");
     }
 
 
