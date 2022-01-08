@@ -42,19 +42,10 @@ import java.util.UUID;
 @RequestMapping(produces = "application/json")
 public class UserController{
 
-    @Value("${message.get.enabled}")
-    boolean enabled;
-
     @Autowired
     private EmailService emailService;
     @Autowired
     private final SqlSession sqlSession;
-
-    @Autowired
-    private UserService userService;
-
-    // Timer en segundos para bloquear los accesos de las cuentas
-     private final int timer = 30;
 
     //URLs de redirect para cuando se solicita cambio de contrasena. Al solicitar cambio de contrasena se envia un
     //correo con un link al sitio donde se debe hacer el cambio de contrasena, dependiendo del producto (DVU, SNI, etc...)
@@ -85,31 +76,8 @@ public class UserController{
         return Constants.GSON.toJson(this.sqlSession.selectList("getAllUser"));
     }
 
-    @GetMapping("/checkAccess")
-    @ResponseBody
-    public ResponseEntity<Integer> restoreAccess (String email)  {
-        if(!enabled){
-            ResponseEntity<Integer> responseEntity = new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            log.info(responseEntity);
-            return responseEntity;
-         }
-       return userService.checkAccess(email);
-    }
 
 
-    @GetMapping("/configureUserAccess")
-    @ResponseBody
-    public ResponseEntity<String> configureUserAccess(String email) {
-        if(!enabled){
-            ResponseEntity<String> responseEntity = new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            log.info(responseEntity);
-            return responseEntity;
-        }
-        return userService.configureUserAccess(email);
-    }
-
-    //POST: PBM DVU SNI DISCOVERY ENTEL OTRS
-    @ApiIgnore
     @Deprecated
     @PostMapping("/deleteUser")
     @ResponseBody
