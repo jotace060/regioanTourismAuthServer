@@ -6,18 +6,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.access.channel.ChannelProcessingFilter;
 import javax.servlet.ServletContext;
-
 
 @Configuration
 @EnableWebSecurity
@@ -50,9 +48,9 @@ public class WebSecurityConfigurer extends WebSecurityConfigurerAdapter {
         return new BCryptPasswordEncoder();
     }
 
-
     @Override
     protected void configure(final HttpSecurity httpSecurity) throws Exception {
+
         httpSecurity
                 .addFilterBefore(jsonFilter, ChannelProcessingFilter.class)
                 // we don't need CSRF because our token is invulnerable
@@ -64,17 +62,9 @@ public class WebSecurityConfigurer extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 //.antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // SIN SWAGGER
-                /*
-                .antMatchers("/status","/liblic/checkLicense", "/liblic/checkLicenseInit", "/getAllUser",
-                        "/deleteUser", "/insertUser", "/updateUserRolesForProduct", "/createUpdateUser", "/registerNewUser",
-                        "/newPassword", "/passReset", "/confirmEmail", "/otrsAuth", "/getAllCompanyUsersBylLicenseCompanyId",
-                        "/checkToken", "/getCompanyByUserEmail", "/getUserById", "/getAllCountries", "/webhook/payment",
-                        "/lic/*").permitAll()
-                    */
-                .antMatchers("/**").permitAll()
-                .anyRequest().authenticated() ;
-
+                .antMatchers("/status","/swagger-resources/**","/swagger-ui.html", "/v2/api-docs", "/webjars/**"
+                ,"/swagger-resources" ,"/configuration/ui","/configuration/**","/configuration/security","/swagger-ui/**","/swagger-ui","/csrf","/").permitAll()
+                .anyRequest().authenticated().and().formLogin(Customizer.withDefaults()).httpBasic(Customizer.withDefaults());
 
         httpSecurity.headers().contentTypeOptions();
         httpSecurity.headers().xssProtection();
@@ -83,10 +73,15 @@ public class WebSecurityConfigurer extends WebSecurityConfigurerAdapter {
         httpSecurity.headers().cacheControl();
 
     }
+
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
         auth.inMemoryAuthentication()
-                .withUser("josoriotest").password(passwordEncoder().encode("ddp4r4d1g"))
+                .withUser("dparadig")
+                .password(passwordEncoder().encode("ddp4r4d1g"))
                 .authorities("ADMIN");
     }
+
+
+
 }

@@ -8,18 +8,25 @@ import com.dparadig.auth_server.common.*;
 import com.dparadig.auth_server.service.EmailService;
 import com.dparadig.auth_server.service.UserService;
 import com.google.gson.JsonObject;
+import io.swagger.models.auth.In;
 import lombok.extern.apachecommons.CommonsLog;
 import org.apache.ibatis.session.SqlSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.NoHandlerFoundException;
 import springfox.documentation.annotations.ApiIgnore;
 
+import javax.jws.soap.SOAPBinding;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -35,30 +42,36 @@ import java.util.UUID;
 @RequestMapping(produces = "application/json")
 public class UserController{
 
+    @Value("${message.get.enabled}")
+    boolean enabled;
+
     @Autowired
     private EmailService emailService;
     @Autowired
     private final SqlSession sqlSession;
 
+    @Autowired
+    private UserService userService;
+
     // Timer en segundos para bloquear los accesos de las cuentas
-    private final int timer = 30;
-    
+     private final int timer = 30;
+
     //URLs de redirect para cuando se solicita cambio de contrasena. Al solicitar cambio de contrasena se envia un
     //correo con un link al sitio donde se debe hacer el cambio de contrasena, dependiendo del producto (DVU, SNI, etc...)
     @Value("${frontend.url}")
     private String frontendURL;
-    
+
     @Value("${frontend.pnotificaciones_url}")
     private String pNotificacionesFeURL;
-    
+
     @Value("${frontend.dvu_url}")
     private String pDvuURL;
-    
+
     //Token de seguridad que usan algunas APIs para aumentar la seguridad. Se usa en aquellas APIs cuyos argumentos
     //puede ser facilmente detectados por terceras personas.
     @Value("${privToken}")
     private String privToken;
-    
+
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public UserController(SqlSession sqlSession) {
@@ -69,48 +82,30 @@ public class UserController{
     @ResponseBody
     public String getAllUser() {
 
-           return Constants.GSON.toJson(this.sqlSession.selectList("getAllUser"));
+        return Constants.GSON.toJson(this.sqlSession.selectList("getAllUser"));
     }
 
     @GetMapping("/checkAccess")
     @ResponseBody
-    public ResponseEntity<Integer> restoreAccess (String email) {
-        CustomerUser user = this.sqlSession.selectOne("getUserByEmail", email);
-        if (user == null) {
-            return ResponseEntity.ok().body(1);
-        }
-        // Revisar si el usuario tiene acceso al sistema
-        int user_id = this.sqlSession.selectOne("getUserIdByEmail", email);
-        int validate_access = this.sqlSession.selectOne("getAccessValue", user_id);
-        if (validate_access == 0) {
-            int get_time = this.sqlSession.selectOne("getTimeAccess", user_id);
-            if (get_time >= this.timer) {
-                this.sqlSession.update("updateAccess", user_id);
-                return ResponseEntity.ok().body(1);
-            } else {
-                return ResponseEntity.ok().body(0);
-            }
-        } else {
-            return ResponseEntity.ok().body(1);
-        }
+    public ResponseEntity<Integer> restoreAccess (String email)  {
+        if(!enabled){
+            ResponseEntity<Integer> responseEntity = new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            log.info(responseEntity);
+            return responseEntity;
+         }
+       return userService.checkAccess(email);
     }
+
 
     @GetMapping("/configureUserAccess")
     @ResponseBody
     public ResponseEntity<String> configureUserAccess(String email) {
-        CustomerUser user = this.sqlSession.selectOne("getUserByEmail", email);
-        if (user == null) {
-            return ResponseEntity.badRequest().body("El usuario no se encuentra registrado");
+        if(!enabled){
+            ResponseEntity<String> responseEntity = new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            log.info(responseEntity);
+            return responseEntity;
         }
-        int user_id = this.sqlSession.selectOne("getUserIdByEmail", email);
-        int sessions_failed = this.sqlSession.selectOne("getSessionsFailed", user_id);
-        if (sessions_failed == 2) {
-            this.sqlSession.update("denyAccess", user_id);
-            return ResponseEntity.ok().body("Tu cuenta ha sido suspendida temporalmente, por favor comunícate con soporte.");
-        } else {
-            this.sqlSession.insert("registerNewSessionFailed", user_id);
-            return ResponseEntity.ok().body("Usuario y contraseña no coinciden");
-        }
+        return userService.configureUserAccess(email);
     }
 
     //POST: PBM DVU SNI DISCOVERY ENTEL OTRS
@@ -119,16 +114,16 @@ public class UserController{
     @PostMapping("/deleteUser")
     @ResponseBody
     public String deleteUser(Long customerUserId) {
-    	JsonObject response = new JsonObject();
-    	System.out.println("deleteUser: " + customerUserId);
-    	HashMap<String, Long> options = new HashMap<String, Long>();
-    	options.put("customerUserId", customerUserId);
-    	
-    	this.sqlSession.delete("deleteUserRoles", options);
-    	this.sqlSession.delete("deleteUserTokens", options);
-    	this.sqlSession.delete("deleteUserData", options);
-    	
-    	return response.toString();
+        JsonObject response = new JsonObject();
+        System.out.println("deleteUser: " + customerUserId);
+        HashMap<String, Long> options = new HashMap<String, Long>();
+        options.put("customerUserId", customerUserId);
+
+        this.sqlSession.delete("deleteUserRoles", options);
+        this.sqlSession.delete("deleteUserTokens", options);
+        this.sqlSession.delete("deleteUserData", options);
+
+        return response.toString();
     }
 
     //POST: PBM DVU SNI DISCOVERY ENTEL
@@ -139,67 +134,67 @@ public class UserController{
 
         CustomerCompany customerCompany = new CustomerCompany();
         customerCompany.setCompanyName(companyName);
-        
+
         Map<String, Object> companyMap = new HashMap<String, Object>();
         companyMap.put("companyName", companyName);
         companyMap.put("portalType", portalType);
         Integer company_id = null;
         boolean companyExists = false, companyWithLicense = false;
-        
+
         // Primero validar si existe una empresa con el nombre companyName. Si no existe, crear una.
         // De existir, buscar por empresa hasta encontrar una que tenga licencia activa.
         List<LicenseCompany> companies = this.sqlSession.selectList("getCustomerCompanyByName", companyMap);
         for (LicenseCompany company : companies) {
-        	if (company.getLicenseCompanyId() == null) {
-        		if (!companyExists) {
-            		company_id = company.getCustomerCompanyId();
-            		companyWithLicense = false;
-            		companyExists = true;
-        		}
-        	}
-        	else {
-        		company_id = company.getCustomerCompanyId();
-        		companyExists = true;
-        		companyWithLicense = true;
-        		break;
-        	}
+            if (company.getLicenseCompanyId() == null) {
+                if (!companyExists) {
+                    company_id = company.getCustomerCompanyId();
+                    companyWithLicense = false;
+                    companyExists = true;
+                }
+            }
+            else {
+                company_id = company.getCustomerCompanyId();
+                companyExists = true;
+                companyWithLicense = true;
+                break;
+            }
         }
-        
+
         CustomerUser customerUser = new CustomerUser();
         customerUser.setName(name);
         customerUser.setEmail(email);
         customerUser.setPassCurr(passwordEncoder.encode(passCurr));
-        
+
         if (!companyExists) {
-        	// Nueva empresa
-        	this.sqlSession.insert("insertCompanyName",customerCompany);
+            // Nueva empresa
+            this.sqlSession.insert("insertCompanyName",customerCompany);
             log.info("Inserted Company with ID: "+customerCompany.getCustomerCompanyId());
             response.addProperty("license", "create");
         }
         else {
-        	customerCompany.setCustomerCompanyId(company_id);
-        	if (!companyWithLicense) {
+            customerCompany.setCustomerCompanyId(company_id);
+            if (!companyWithLicense) {
                 response.addProperty("license", "create");
-        	}
-        	else {
-        		// Si la compania tiene licencia, insertar usuario en 'Espera de validacion'
-        		customerUser.setValidationStatus(0);
+            }
+            else {
+                // Si la compania tiene licencia, insertar usuario en 'Espera de validacion'
+                customerUser.setValidationStatus(0);
                 response.addProperty("license", "exists");
-        	}
+            }
         }
-        
+
         customerUser.setCustomerCompanyId(customerCompany.getCustomerCompanyId());
         String sucessRegister = "Successfully Registered";
         String licensedRegister = ". Since you are on a licensed company, you have to contact the Administrator for your account validation";
-        
+
         try {
             this.sqlSession.insert("insertUser",customerUser);
             response.add("data",Constants.GSON.toJsonTree(customerUser));
             response.addProperty("status", "success");
-            if (companyExists && companyWithLicense) 
-            	response.addProperty("message", sucessRegister + licensedRegister);
+            if (companyExists && companyWithLicense)
+                response.addProperty("message", sucessRegister + licensedRegister);
             else
-                response.addProperty("message", sucessRegister);            	
+                response.addProperty("message", sucessRegister);
             log.info("Inserted User with ID: "+customerUser.getCustomerUserId());
             //createConfirmationTokenAndSendEmail(customerUser, portalType);
             //Create ROLE
@@ -227,33 +222,33 @@ public class UserController{
     @PostMapping("/updateUserRolesForProduct")
     @ResponseBody
     public String updateUserRolesForProduct(String customerUserId, String productName, String companyId, String roleId) {
-    	JsonObject response = new JsonObject();
-    	HashMap<String, String> options = new HashMap<String, String>();
-    	options.put("customerUserId", customerUserId);
-    	options.put("productName", productName);
-    	options.put("companyId", companyId);
-    	options.put("roleId", roleId);
-    	
-    	List<HashMap<String, Long>> rolesToDelete = sqlSession.selectList("selectRolesForProduct", options);
-    	
-    	for(int i = 0; i < rolesToDelete.size(); i++) {
-    		Long _customerUserId = rolesToDelete.get(i).get("customer_user_id");
-    		Long _roleId = rolesToDelete.get(i).get("role_id");
-    		Long _licenseCompanyId = rolesToDelete.get(i).get("license_company_id");
-    		    		
-    		HashMap<String, Long> deleteOptions = new HashMap<String, Long>();
-    		deleteOptions.put("customerUserId", _customerUserId);
-    		deleteOptions.put("licenseCompanyId", _licenseCompanyId);
-    		deleteOptions.put("roleId", _roleId);
-    		sqlSession.delete("deleteUserRolesForProduct", deleteOptions);
-    		
-    	}
-    	
-    	if(roleId != null) {
-    		sqlSession.update("updateUserRolesForProduct", options);
-    	}
-    	
-    	return response.toString();
+        JsonObject response = new JsonObject();
+        HashMap<String, String> options = new HashMap<String, String>();
+        options.put("customerUserId", customerUserId);
+        options.put("productName", productName);
+        options.put("companyId", companyId);
+        options.put("roleId", roleId);
+
+        List<HashMap<String, Long>> rolesToDelete = sqlSession.selectList("selectRolesForProduct", options);
+
+        for(int i = 0; i < rolesToDelete.size(); i++) {
+            Long _customerUserId = rolesToDelete.get(i).get("customer_user_id");
+            Long _roleId = rolesToDelete.get(i).get("role_id");
+            Long _licenseCompanyId = rolesToDelete.get(i).get("license_company_id");
+
+            HashMap<String, Long> deleteOptions = new HashMap<String, Long>();
+            deleteOptions.put("customerUserId", _customerUserId);
+            deleteOptions.put("licenseCompanyId", _licenseCompanyId);
+            deleteOptions.put("roleId", _roleId);
+            sqlSession.delete("deleteUserRolesForProduct", deleteOptions);
+
+        }
+
+        if(roleId != null) {
+            sqlSession.update("updateUserRolesForProduct", options);
+        }
+
+        return response.toString();
     }
     //POST PBM DVU SNI DISCOVERY
     @ApiIgnore
@@ -261,30 +256,30 @@ public class UserController{
     @PostMapping("/createUpdateUser")
     @ResponseBody
     public String createUpdateUser(String name, String email, Integer companyId, Integer customerUserParentId, String passCurr, Integer roleId) {
-    	JsonObject response = new JsonObject();
-    	
-    	CustomerUser user = null;
-    	
-    	if(customerUserParentId != null) {
-    		user = (CustomerUser) this.sqlSession.selectOne("getUserById", customerUserParentId);
-    	}
-    	
-    	if(user != null) {    		
-    		user.setName(name);
+        JsonObject response = new JsonObject();
+
+        CustomerUser user = null;
+
+        if(customerUserParentId != null) {
+            user = (CustomerUser) this.sqlSession.selectOne("getUserById", customerUserParentId);
+        }
+
+        if(user != null) {
+            user.setName(name);
             user.setEmail(email);
-            
+
             if(passCurr != null) {
-            	user.setPassCurr(passwordEncoder.encode(passCurr));
-            	sqlSession.update("updateUserPass", user);
+                user.setPassCurr(passwordEncoder.encode(passCurr));
+                sqlSession.update("updateUserPass", user);
             }
-            
+
             sqlSession.update("updateUser", user);
-            
-    	} else {
-    		return this.registerNewUser(name, email, companyId, customerUserParentId, passCurr, null);
-    	}
-    	
-    	return response.toString();
+
+        } else {
+            return this.registerNewUser(name, email, companyId, customerUserParentId, passCurr, null);
+        }
+
+        return response.toString();
     }
     //POST PBM DVU SNI DISCOVERY
     @ApiIgnore
@@ -382,13 +377,13 @@ public class UserController{
                     CustomerUser customerUser = (CustomerUser) this.sqlSession.selectOne("getUserById",token.getCustomerUserId());
                     //Check new pass is not repeat
                     if( passwordEncoder.matches(password,customerUser.getPassCurr())||
-                        passwordEncoder.matches(password,customerUser.getPassPrev())||
-                        passwordEncoder.matches(password,customerUser.getPassPrev2())){
+                            passwordEncoder.matches(password,customerUser.getPassPrev())||
+                            passwordEncoder.matches(password,customerUser.getPassPrev2())){
                         response.addProperty("message","You can't use old passwords");
                         log.info("Old password for : "+token.getTokenType());
                         response.addProperty("status","error");
                     }else{
-                    	log.info("new pass: " + password);
+                        log.info("new pass: " + password);
                         customerUser.setPassCurr(passwordEncoder.encode(password));
                         this.sqlSession.update("updateUserPass",customerUser);
                         log.info("Password updated for user "+token.getCustomerUserId());
@@ -430,7 +425,7 @@ public class UserController{
                 else if (portalType.equalsIgnoreCase("notificaciones"))
                     sendPassResetEmailESP(customerUser,token, pNotificacionesFeURL);
                 else if(portalType.equalsIgnoreCase("dvu")) {
-                	sendPassResetEmailESP(customerUser,token, pDvuURL);
+                    sendPassResetEmailESP(customerUser,token, pDvuURL);
                 }
             }).start();
             response.addProperty("message","Password reset link has been sent to "+email);
@@ -540,7 +535,7 @@ public class UserController{
 
     @GetMapping("/getAllCompanyUsersBylLicenseCompanyId")
     @ResponseBody
-        public String getAllCompanyUsersBylLicenseCompanyId(@RequestParam int licenseCompanyId) {
+    public String getAllCompanyUsersBylLicenseCompanyId(@RequestParam int licenseCompanyId) {
         Response response = new Response();
         try {
             List users = this.sqlSession.selectList("getAllCompanyUsersBylLicenseCompanyId", licenseCompanyId);
@@ -566,36 +561,36 @@ public class UserController{
     @GetMapping("/checkToken")
     @ResponseBody
     public String checkToken(@RequestParam String token, @RequestParam String companyId, @RequestParam String productName) {
-    	Response response = new Response();
-    	
-    	HashMap<String, Object> options = new HashMap<String, Object>();
-    	options.put("cdkey", token);
-    	options.put("company_id", companyId);
-    	options.put("product_name", productName);
-    	
-    	LicenseCompany license = (LicenseCompany) this.sqlSession.selectOne("getLicenseWithToken", options);
-    	
-    	response.setData(license != null); 
-    	
-    	return response.toJson();
+        Response response = new Response();
+
+        HashMap<String, Object> options = new HashMap<String, Object>();
+        options.put("cdkey", token);
+        options.put("company_id", companyId);
+        options.put("product_name", productName);
+
+        LicenseCompany license = (LicenseCompany) this.sqlSession.selectOne("getLicenseWithToken", options);
+
+        response.setData(license != null);
+
+        return response.toJson();
     }
     //GET PBM ,POST en DVU | EXCEPCION
     @RequestMapping("/getCompanyByUserEmail")
     @ResponseBody
     public String getCompanyByUserEmail(@RequestParam String privToken, @RequestParam String userEmail) {
-    	Response response = new Response();
-    	
-    	if(privToken.compareTo(this.privToken) != 0) {
-    		response.setStatus("error");
-    		response.setMessage("You dont have authorization to access this resource");
-    		return response.toJson();
-    	}
-    	
-    	CustomerCompany company = (CustomerCompany) this.sqlSession.selectOne("getCompanyByUserEmail", userEmail);
-    	
-    	response.setData(company); 
-    	
-    	return response.toJson();
+        Response response = new Response();
+
+        if(privToken.compareTo(this.privToken) != 0) {
+            response.setStatus("error");
+            response.setMessage("You dont have authorization to access this resource");
+            return response.toJson();
+        }
+
+        CustomerCompany company = (CustomerCompany) this.sqlSession.selectOne("getCompanyByUserEmail", userEmail);
+
+        response.setData(company);
+
+        return response.toJson();
     }
 
     //region Settings
