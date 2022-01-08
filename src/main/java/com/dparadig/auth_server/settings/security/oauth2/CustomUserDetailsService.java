@@ -31,8 +31,9 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         log.info("RMR - loadUserByUsername starting...");
         CustomerUser customerUser = userService.getUserByEmail(email);
-        if (null == customerUser)
+        if (null == customerUser) {
             throw new UsernameNotFoundException("Bad credentials");
+        }
         log.info("Founded "+customerUser.getCustomerUserId());
         List<Role> userRoles = userService.getUserRoles(customerUser.getCustomerUserId());
         List<Privilege> userPrivileges = userService.getRolePrivilegesOfUser(customerUser.getCustomerUserId());
