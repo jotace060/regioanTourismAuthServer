@@ -44,7 +44,7 @@ public class WebSecurityConfigurer extends WebSecurityConfigurerAdapter {
         httpSecurity
                 .addFilterBefore(jsonFilter, ChannelProcessingFilter.class)
                 // we don't need CSRF because our token is invulnerable
-                //.csrf().disable()
+                .csrf().disable()
                 // don't create session
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                 .authorizeRequests()
