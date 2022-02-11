@@ -1,5 +1,4 @@
 package com.dparadig.auth_server.controller;
-
 import com.dparadig.auth_server.alias.LibLicenseRequest;
 import com.dparadig.auth_server.alias.LicenseCompany;
 import com.dparadig.auth_server.alias.LicenseOption;
@@ -16,15 +15,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 //import com.dparadig.lib_licencias.dpaLicencia;
-
 /**
  * @author RMujica
  */
@@ -33,7 +29,6 @@ import java.util.Map;
 @CrossOrigin(origins = Constants.ORIGIN)
 @RequestMapping(produces = "application/json")
 public class LicenseController {
-
     @Autowired
     private EmailService emailService;
     @Autowired
@@ -43,12 +38,9 @@ public class LicenseController {
     @Value("${frontend.pnotificaciones_url}")
     private String pNotificacionesFeURL;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
-
     public LicenseController(SqlSession sqlSession) {
         this.sqlSession = sqlSession;
     }
-
     @PostMapping(value = "/liblic/checkLicense", consumes = "application/json")
     @ResponseBody
     public String checkLicense(@RequestBody LibLicenseRequest licRequest) {
@@ -61,7 +53,6 @@ public class LicenseController {
         Gson gson = new Gson();
         JsonObject payloadObj = gson.fromJson(decryptedPayload, JsonObject.class);
         log.debug("RMR - checkLicense: payloadObj = "+payloadObj);
-
         if(payloadObj==null || payloadObj.isJsonNull()) {
             response.addProperty("status", "error");
             response.addProperty("message", "Received payload is null");
@@ -87,7 +78,6 @@ public class LicenseController {
                         cdkey, "", "");
             }
         }
-
         log.info("RMR - checkLicense: response = "+response.toString());
         Instant instant = Instant.now();
         response.addProperty("timestamp", instant.toEpochMilli());
@@ -97,7 +87,6 @@ public class LicenseController {
         log.info("RMR - checkLicense: encryptedResponse = "+encryptedResponse.toString());
         return encryptedResponse.toString();
     }
-
     //Solo para pruebas de nodos, limite de usos inicial = 5
     @PostMapping(value = "/liblic/checkLicenseInit", consumes = "application/json")
     @ResponseBody
@@ -107,7 +96,6 @@ public class LicenseController {
         String decryptedPayload = encrypter.decryptString(licRequest.getPayload());
         Gson gson = new Gson();
         JsonObject payloadObj = gson.fromJson(decryptedPayload, JsonObject.class);
-
         if(payloadObj==null || payloadObj.isJsonNull()) {
             response.addProperty("status", "error");
             response.addProperty("message", "Received payload is null");
@@ -169,7 +157,6 @@ public class LicenseController {
                 }
             }
         }
-
         Instant instant = Instant.now();
         response.addProperty("timestamp", instant.toEpochMilli());
         String encryptedText = encrypter.encryptString(response.toString());
@@ -177,7 +164,6 @@ public class LicenseController {
         encryptedResponse.addProperty("payload",encryptedText);
         return encryptedResponse.toString();
     }
-
     private JsonObject checkExistingCdkey(LicenseCompany dbLicense, String cdkey, String pkey){
         JsonObject response = new JsonObject();
         log.debug("found " + dbLicense.getInstanceName());
@@ -265,7 +251,6 @@ public class LicenseController {
         }
         return response;
     }
-
     private void createDbLog(String log_type, String message, String license, String source_name, String source_ip){
         Map<String, Object> logMap = new HashMap<String, Object>();
         logMap.put("log_type", log_type);
@@ -276,7 +261,6 @@ public class LicenseController {
         log.debug("Inserting DB log: "+message);
         this.sqlSession.insert("insertLog", logMap);
     }
-
     private String createCdKey(JsonObject payloadObj){
         /*byte tmpMacByte[] = new byte[6];
         SecureRandom secRandom = new SecureRandom() ;
@@ -293,7 +277,6 @@ public class LicenseController {
         log.debug("RMR - createCdKey: returning = ["+ret+"]");
         return ret;
     }
-
     public String byteToHex(byte num) {
         char[] hexDigits = new char[2];
         hexDigits[0] = Character.forDigit((num >> 4) & 0xF, 16);
@@ -307,7 +290,6 @@ public class LicenseController {
         }
         return hexStringBuffer.toString();
     }
-
     //liblic Master Forwarder test
     /*@RequestMapping(value = "/liblic/checkSlaveReq", method = RequestMethod.POST, consumes = "application/json")
     @ResponseBody
@@ -320,6 +302,5 @@ public class LicenseController {
         log.info("RMR - checkSlaveReq: response = "+response);
         return response.toString();
     }*/
-
     //endregion
 }
