@@ -1,6 +1,6 @@
 package com.dparadig.auth_server;
-import com.dparadig.auth_server.alias.CustomerUser;
-import com.dparadig.auth_server.service.UserService;
+import com.regionalTourism.alias.CustomerUser;
+import com.regionalTourism.service.UserService;
 import org.apache.ibatis.session.SqlSession;
 import org.junit.Assert;
 import org.junit.Test;

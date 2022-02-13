@@ -4,7 +4,7 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.dparadig.auth_server.mapper.LicenseMapper">
+<mapper namespace="com.regionalTourism.mapper.LicenseMapper">
     <insert id="registerLicenseInit">
         INSERT INTO license_company (customer_company_id, license_type_id, pay_element_id, customer_user_id,
             instance_name, expr_date, auto_renew, last_pay_date, status, cdkey, pkey, retries)

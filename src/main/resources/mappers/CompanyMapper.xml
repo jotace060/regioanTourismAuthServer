@@ -4,7 +4,7 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.dparadig.auth_server.mapper.CompanyMapper">
+<mapper namespace="com.regionalTourism.mapper.CompanyMapper">
     
     <select id="getCompanyByUserEmail" parameterType="String" resultType="CustomerCompany">
         select

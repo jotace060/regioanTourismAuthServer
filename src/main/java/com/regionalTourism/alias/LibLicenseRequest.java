@@ -1,0 +1,22 @@
+package com.regionalTourism.alias;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
+/**
+ * @author jlabarca & ebravo
+ */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class LibLicenseRequest implements Serializable {
+
+    private static final long serialVersionUID = 7652154321L;
+    private String cdkey;
+    private String pkey;
+    private String mac;
+    private String payload;
+}
