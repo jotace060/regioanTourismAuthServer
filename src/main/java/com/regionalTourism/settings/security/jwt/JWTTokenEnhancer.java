@@ -19,6 +19,7 @@ public class JWTTokenEnhancer implements TokenEnhancer {
     @Override
     public OAuth2AccessToken enhance(OAuth2AccessToken accessToken,
                                      OAuth2Authentication authentication) {
+
         CustomUser customUser = (CustomUser) authentication.getPrincipal();
         Map<String, Object> additionalInfo = new HashMap<>();
         String auths = "";
